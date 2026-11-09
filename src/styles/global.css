@@ -1,0 +1,279 @@
+/* ---------- Design tokens (light) ---------- */
+:root {
+  color-scheme: light dark;
+
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --text-body: 1.125rem; /* 18px */
+  --text-callout: 1.25rem; /* 20px */
+  --text-title: 1.75rem; /* 28px */
+  --text-large-title: 2.25rem; /* 36px */
+  --line-height: 1.55;
+
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --label: #000000;
+  --label-secondary: #3c3c43; /* solid, high contrast — no faint greys */
+  --separator: #c6c6c8;
+  --accent: #a33a0b; /* warm paprika; 6.6:1 on white */
+  --on-accent: #ffffff;
+  --danger: #c4170c;
+  --bar-bg: rgba(242, 242, 247, 0.78);
+  --focus-ring: #0a64d6;
+
+  --tap: 48px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --gutter: 20px;
+  --bar-height: 56px;
+
+  --press-scale: 0.97;
+  --press-duration: 100ms;
+}
+
+/* ---------- Dark mode ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --label: #ffffff;
+    --label-secondary: #d1d1d6;
+    --separator: #38383a;
+    --accent: #ff9f5a; /* 10.4:1 on black */
+    --on-accent: #000000;
+    --danger: #ff6961;
+    --bar-bg: rgba(0, 0, 0, 0.72);
+    --focus-ring: #5aa9ff;
+  }
+}
+
+/* ---------- Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--label);
+  font-family: var(--font);
+  font-size: var(--text-body);
+  line-height: var(--line-height);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Press feedback: starts on pointer-down, no delay ---------- */
+.pressable {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform var(--press-duration) ease-out, opacity var(--press-duration) ease-out;
+}
+.pressable:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+.pressable:disabled {
+  opacity: 0.5;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: var(--tap);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius);
+  font-size: var(--text-callout);
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn--block {
+  width: 100%;
+  min-height: 56px;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.btn--plain {
+  background: transparent;
+  color: var(--accent);
+  padding: 0 8px;
+  font-weight: 500;
+  font-size: var(--text-body);
+}
+
+/* Sign in with Apple: black on light, white on dark (per Apple's guidelines). */
+.btn--apple {
+  background: #000;
+  color: #fff;
+}
+/* Sign in with Google: neutral white button with the colour logo. */
+.btn--google {
+  background: #fff;
+  color: #1f1f1f;
+  box-shadow: inset 0 0 0 1px #747775;
+}
+@media (prefers-color-scheme: dark) {
+  .btn--apple {
+    background: #fff;
+    color: #000;
+  }
+  .btn--google {
+    background: #131314;
+    color: #e3e3e3;
+    box-shadow: inset 0 0 0 1px #8e918f;
+  }
+}
+.btn__icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+/* ---------- Translucent top bar ---------- */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: calc(var(--bar-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) max(var(--gutter), env(safe-area-inset-right)) 0
+    max(var(--gutter), env(safe-area-inset-left));
+  background: var(--bar-bg);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--separator);
+}
+.top-bar__title {
+  font-size: var(--text-callout);
+  font-weight: 700;
+}
+
+/* ---------- Layout ---------- */
+.screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.screen__content {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px max(var(--gutter), env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom))
+    max(var(--gutter), env(safe-area-inset-left));
+}
+.large-title {
+  font-size: var(--text-large-title);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.secondary {
+  color: var(--label-secondary);
+}
+
+/* ---------- Sign-in screen ---------- */
+.sign-in {
+  justify-content: center;
+}
+.sign-in__inner {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: calc(32px + env(safe-area-inset-top)) var(--gutter) calc(32px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  text-align: center;
+}
+.sign-in__logo {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  border-radius: 22px;
+}
+.sign-in__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sign-in__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.notice {
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--danger);
+  font-weight: 500;
+  text-align: left;
+}
+
+/* ---------- Empty state ---------- */
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 48px 0;
+  text-align: center;
+}
+
+/* ---------- Reduced motion: replace movement with fades ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --press-scale: 1;
+  }
+  .pressable {
+    transition: opacity var(--press-duration) linear;
+  }
+  .pressable:active:not(:disabled) {
+    transform: none;
+    opacity: 0.6;
+  }
+}
