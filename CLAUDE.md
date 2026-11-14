@@ -66,3 +66,52 @@ npm run format:check  # Prettier check
 ```
 
 Before finishing any task, run `npm run lint`, `npm test` and `npm run build`. All three must pass.
+
+## Git workflow
+
+Each prompt in `docs/PLAN.md` §7 is one unit of work: one branch, one pull request, merged into `main` before the next prompt starts.
+
+### Before starting a prompt
+
+1. `git status` must be clean. If it isn't, stop and ask; never discard someone's uncommitted work.
+2. Start from the latest `main`: `git fetch origin main` and branch from `origin/main`.
+3. If the previous prompt's branch isn't merged into `main` yet, stop and say so. Every prompt assumes the previous one is merged.
+4. Branch name: `prompt-NN-<short-slug>`, e.g. `prompt-02-db-rls-auth`, `prompt-03-library`. If the session assigns a branch name (cloud sessions do), use that one instead.
+
+### While working
+
+- Commit after each completed step of the prompt's Progress list, not one giant commit at the end. Each commit should build.
+- Commit message format ([Conventional Commits](https://www.conventionalcommits.org)):
+
+  ```
+  <type>(<scope>): <what changed, imperative, ≤ 72 chars>
+
+  <why: the reason and any decision worth remembering, wrapped at 72>
+
+  Prompt: NN
+  ```
+
+  - **type:** `feat` (user-visible feature), `fix` (bug fix), `test`, `docs`, `refactor`, `chore` (deps, config, tooling), `ci`, `db` (migrations, RLS policies).
+  - **scope:** the area, e.g. `library`, `shopping`, `cook`, `import`, `auth`, `rls`, `pwa`, `i18n`.
+  - Example: `feat(shopping): merge ingredients across dishes by canonical name`
+
+- Never commit secrets: `.env*` files, API keys, Supabase service-role keys, tokens. Put example variables in `.env.example` with empty values.
+- Never commit generated output (`.next/`, `test-results/`, `playwright-report/`, `coverage/`).
+
+### Before finishing a prompt
+
+1. Run `npm run lint`, `npm test` and `npm run build`. All three must pass. Also run `npm run test:e2e` when the prompt changed UI or flows.
+2. Commit any remaining work, then push: `git push -u origin <branch>`. Retry network failures up to 4 times with backoff.
+3. Open a pull request into `main` titled `Prompt NN: <prompt objective>`. In the description:
+   - what was built, with the Progress list
+   - each acceptance criterion as a checkbox, ticked only if verified, with how it was verified
+   - anything skipped, deferred or decided differently from the prompt, and why
+   - manual checks the reviewer must do (e.g. iPhone home-screen tests)
+4. Don't merge it yourself. The owner reviews and merges.
+
+### Never
+
+- Force-push to `main` or rewrite history that's already pushed. Fix mistakes with a new commit.
+- Push directly to `main`.
+- Edit or delete an applied database migration; add a new one instead.
+- Delete branches you didn't create.
