@@ -100,14 +100,12 @@ export async function seedRecipe(
     .single();
   if (error) throw error;
 
-  const ing = await db
-    .from("ingredients")
-    .insert({
-      book_id: user.bookId,
-      recipe_id: recipe.id,
-      display_text: "3 גזרים",
-      canonical_name: "גזר",
-    });
+  const ing = await db.from("ingredients").insert({
+    book_id: user.bookId,
+    recipe_id: recipe.id,
+    display_text: "3 גזרים",
+    canonical_name: "גזר",
+  });
   if (ing.error) throw ing.error;
   const step = await db
     .from("steps")

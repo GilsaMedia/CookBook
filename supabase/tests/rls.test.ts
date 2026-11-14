@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   admin,
@@ -10,6 +11,9 @@ import {
   type Client,
   type TestUser,
 } from "./helpers";
+
+/** Untyped view of a client, for calls where the table name is a variable. */
+const loose = (client: Client) => client as unknown as SupabaseClient;
 
 type Table =
   | "books"
@@ -102,7 +106,7 @@ async function snapshot(bookId: string) {
   const db = admin();
   const out: Record<string, unknown> = {};
   for (const s of specs) {
-    const { data, error } = await db.from(s.table).select("*").eq(s.bookColumn, bookId);
+    const { data, error } = await loose(db).from(s.table).select("*").eq(s.bookColumn, bookId);
     if (error) throw error;
     out[s.table] = (data as Record<string, unknown>[]).sort((x, y) =>
       JSON.stringify(x).localeCompare(JSON.stringify(y)),
@@ -146,14 +150,12 @@ beforeAll(async () => {
   const pref = await b.client
     .from("preferences")
     .insert({ book_id: b.bookId, scope: "global", excluded_ingredients: ["הל"] });
-  const inv = await b.client
-    .from("invites")
-    .insert({
-      book_id: b.bookId,
-      email: "friend@test.local",
-      token_hash: randomUUID(),
-      invited_by: b.id,
-    });
+  const inv = await b.client.from("invites").insert({
+    book_id: b.bookId,
+    email: "friend@test.local",
+    token_hash: randomUUID(),
+    invited_by: b.id,
+  });
   expect(pref.error).toBeNull();
   expect(inv.error).toBeNull();
 
@@ -167,7 +169,7 @@ afterAll(cleanupUsers);
 describe("another user's book is invisible and untouchable", () => {
   describe.each(specs)("$table", (spec) => {
     it("the victim can see their own rows (so the checks below aren't vacuous)", async () => {
-      const { data, error } = await bob.client
+      const { data, error } = await loose(bob.client)
         .from(spec.table)
         .select("*")
         .eq(spec.bookColumn, bob.bookId);
@@ -176,7 +178,7 @@ describe("another user's book is invisible and untouchable", () => {
     });
 
     it("select returns nothing", async () => {
-      const { data, error } = await alice.client
+      const { data, error } = await loose(alice.client)
         .from(spec.table)
         .select("*")
         .eq(spec.bookColumn, bob.bookId);
@@ -185,7 +187,7 @@ describe("another user's book is invisible and untouchable", () => {
     });
 
     it("insert is refused", async () => {
-      const res = await alice.client
+      const res = await loose(alice.client)
         .from(spec.table)
         .insert(spec.insert(bob, alice) as never)
         .select();
@@ -193,7 +195,7 @@ describe("another user's book is invisible and untouchable", () => {
     });
 
     it("update changes nothing", async () => {
-      const res = await alice.client
+      const res = await loose(alice.client)
         .from(spec.table)
         .update(spec.update as never)
         .eq(spec.bookColumn, bob.bookId)
@@ -202,7 +204,7 @@ describe("another user's book is invisible and untouchable", () => {
     });
 
     it("delete removes nothing", async () => {
-      const res = await alice.client
+      const res = await loose(alice.client)
         .from(spec.table)
         .delete()
         .eq(spec.bookColumn, bob.bookId)
@@ -219,14 +221,12 @@ describe("another user's book is invisible and untouchable", () => {
   });
 
   it("can't file one's own recipe under another book's category", async () => {
-    const res = await alice.client
-      .from("recipes")
-      .insert({
-        book_id: alice.bookId,
-        title: "x",
-        category_id: bob.categoryId,
-        status: "approved",
-      });
+    const res = await alice.client.from("recipes").insert({
+      book_id: alice.bookId,
+      title: "x",
+      category_id: bob.categoryId,
+      status: "approved",
+    });
     expect(res.error).not.toBeNull();
   });
 
@@ -359,7 +359,7 @@ describe("roles inside a shared book", () => {
 
     it("doesn't see a pending recipe's ingredients, steps or images", async () => {
       for (const table of ["ingredients", "steps", "recipe_images"] as const) {
-        const { data } = await viewer.client
+        const { data } = await loose(viewer.client)
           .from(table)
           .select("recipe_id")
           .eq("book_id", owner.bookId);
@@ -409,17 +409,17 @@ describe("roles inside a shared book", () => {
         .insert({ book_id: owner.bookId, scope: "global", excluded_ingredients: ["הל"] });
       for (const [table, change] of visible) {
         const col = table === "books" ? "id" : "book_id";
-        const seen = await viewer.client.from(table).select("id").eq(col, owner.bookId);
+        const seen = await loose(viewer.client).from(table).select("id").eq(col, owner.bookId);
         expect(seen.data!.length, `${table} visible`).toBeGreaterThan(0);
         // Target one row, so a constraint error can't masquerade as a refusal.
         const id = seen.data![0].id;
-        const upd = await viewer.client
+        const upd = await loose(viewer.client)
           .from(table)
           .update(change as never)
           .eq("id", id)
           .select();
         expect(refusedByRls(upd), `${table} update`).toBe(true);
-        const del = await viewer.client.from(table).delete().eq("id", id).select();
+        const del = await loose(viewer.client).from(table).delete().eq("id", id).select();
         expect(refusedByRls(del), `${table} delete`).toBe(true);
       }
       const img = await viewer.client.storage.from("recipe-images").remove([approved.image]);
@@ -519,7 +519,7 @@ describe("roles inside a shared book", () => {
       expect(rev.data).toHaveLength(1);
 
       for (const s of specs) {
-        const { data } = await viewer.client
+        const { data } = await loose(viewer.client)
           .from(s.table)
           .select("*")
           .eq(s.bookColumn, owner.bookId);
