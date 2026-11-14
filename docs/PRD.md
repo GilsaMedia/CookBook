@@ -3,7 +3,7 @@
 **Version:** 2.0 draft (Nov 2026). Replaces v1.2: the app now serves any family, not one owner.
 **Companion docs:** `docs/PLAN.md` (stack, data model, build order, Claude Code prompts), `CLAUDE.md` (coding rules).
 
-> Items marked **⚠️ TODO (family)** need the family's real data. Suggested values are there so work can continue, but Prompt 2 seeds the categories from Appendix A and Prompt 5 checks the import against them, so confirm those before running Prompt 2.
+> Store sections (§6), pantry list (§8.4) and excluded ingredients (§10) are confirmed by the family. Recipe categories for Efrat's book come from the headings in her Doc when it is imported (§7.3); Appendix A is only the starting set for new books.
 
 ---
 
@@ -94,7 +94,7 @@ Parsing happens once, when the recipe is saved, not when a list is built.
 
 **Store sections** (the fixed list ingredients are assigned to). Each book can reorder them to match the way its family walks its supermarket; this order is the order of the shopping list.
 
-**⚠️ TODO (family): confirm the sections and put them in the order you walk your supermarket.** Suggested default:
+Default order:
 
 1. ירקות ופירות
 2. לחם ומאפים
@@ -122,7 +122,7 @@ Every way of adding a recipe ends at the same **review screen** (§13.3) before 
 - Paste any text (a WhatsApp message, an email). AI splits it into title, ingredients and steps.
 
 ### 7.3 Bulk import (onboarding)
-- **Google Doc / PDF:** split by category headings and recipe headings; each recipe body is structured by AI. Category headings map to the book's categories. Lines like "↑ לתוכן העניינים · הוספה לארוחה בוואטסאפ" are removed. A "מקור המתכון" link becomes the source.
+- **Google Doc / PDF:** split by category headings and recipe headings; each recipe body is structured by AI. **The Doc's category headings become the book's categories:** a heading that matches an existing category by name goes there; any other heading becomes a new category. Before importing, a mapping screen lists every heading with its recipe count and target category, so the owner can rename, merge or confirm. Seeded categories left with no recipes are offered for removal. Lines like "↑ לתוכן העניינים · הוספה לארוחה בוואטסאפ" are removed. A "מקור המתכון" link becomes the source.
 - **Google Keep (Takeout ZIP):** one recipe per note. Labels become tags, with a screen to map labels to categories. Image attachments are imported. The original creation date is kept.
 - An entry that is only a link is queued for import from that link (§7.1).
 - An empty entry is listed as "ריק — למחוק?".
@@ -178,7 +178,7 @@ Every way of adding a recipe ends at the same **review screen** (§13.3) before 
 - Footer: **שיתוף** (plain text through the phone's share sheet), **הדפסה**, **סיימתי**.
 - Building the list uses no AI, and is instant (under 50 ms for 6 recipes).
 
-**Pantry list** (per book, editable in settings). **⚠️ TODO (family): confirm what's usually in the house.** Suggested default:
+**Pantry list** (per book, editable in settings). Default:
 שמן זית, שמן קנולה, מלח, פלפל שחור, קמח, סוכר, פפריקה, כמון, כורכום, אבקת שום, אורגנו, קינמון, חומץ, רוטב סויה.
 
 ## 9. Sharing and export
@@ -198,7 +198,7 @@ Every way of adding a recipe ends at the same **review screen** (§13.3) before 
 - The menu builder (§13.1) never suggests a recipe with an excluded ingredient.
 - Excluded ingredients are hard rules. Taste preferences (less sugar, no cream) are soft: they only affect ranking.
 
-**⚠️ TODO (family): complete the list.** Known so far:
+The family's list:
 
 | Ingredient | Scope |
 |---|---|
@@ -379,9 +379,7 @@ The kitchen is the design brief: phone on the counter, dirty hands, reading from
 
 ## Appendix A: Recipe categories
 
-Each new book is seeded with these 11 categories, in this order. Owners can rename, reorder, add or remove them for their own book. For Efrat's book they must match the category headings in her Doc exactly, because the importer maps headings to categories.
-
-**⚠️ TODO (family): replace with the 11 category headings from Efrat's Doc, in the same order and spelling.** Placeholder:
+Each new book starts with these 11 categories, in this order. Owners can rename, reorder, add or remove them for their own book. A bulk import from a Doc or PDF replaces or extends them with the Doc's own headings (§7.3), so Efrat's book ends up with her Doc's 11 categories without anyone typing them in.
 
 1. מרקים
 2. סלטים

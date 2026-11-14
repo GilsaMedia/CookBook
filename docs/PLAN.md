@@ -281,7 +281,7 @@ Read CLAUDE.md and PLAN.md §4. Fixture: fixtures/efrat-cookbook.pdf (191 recipe
 
 ## Target State
 - Upload UI accepting .pdf, .docx, .zip. Processing runs as a background job with progress ("47/191"); the user can leave and come back.
-- Doc/PDF: deterministic split by category and recipe headings first; AI only structures each recipe body (reuse the Prompt 4 pipeline). Category headings map to the book's categories.
+- Doc/PDF: deterministic split by category and recipe headings first; AI only structures each recipe body (reuse the Prompt 4 pipeline). Category headings become the book's categories: match existing categories by name, create new ones for the rest, and show a mapping screen (heading → category, with counts) before importing, per PRD §7.3.
 - Keep: one recipe per note; labels → tags, with a mapping screen to assign labels to categories; image attachments uploaded to Storage; created time preserved.
 - Notes/entries that are only a link → queued for URL import (Prompt 4 route), keeping the link as source.
 - Empty entries → listed as "ריק — למחוק?".
@@ -292,7 +292,7 @@ Read CLAUDE.md and PLAN.md §4. Fixture: fixtures/efrat-cookbook.pdf (191 recipe
 - Cap AI calls per import job; show estimated count before starting.
 
 ## Acceptance Criteria
-- [ ] Fixture import yields 191 recipes in the right 11 categories, ±0 after review
+- [ ] Fixture import yields 191 recipes in 11 categories named exactly as the fixture's category headings, ±0 after review
 - [ ] Duplicate groups include "מוסקה של קורין"/"מוסקה – קורין" and both "עוף בלימון" entries
 - [ ] A recipe containing "תנור על 160 מעלות" gets uses_oven=true, oven_temp=160
 - [ ] Re-running the same import offers "skip all duplicates"
