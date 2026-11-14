@@ -16,5 +16,22 @@ jobs:
       - run: npm ci
       - run: npm run lint # ESLint + RTL class check
       - run: npm run format:check
+      - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
+
+  database:
+    # RLS isolation tests and end-to-end sign-in against a real local Supabase.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - run: npm run test:db
+      - run: npm run db:env
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

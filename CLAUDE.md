@@ -13,7 +13,7 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 | App         | Next.js 16 (App Router, Turbopack) + TypeScript (strict), React 19                                                                                                         |
 | Styling     | Tailwind CSS 4, configured in `src/app/globals.css` (`@theme`), no `tailwind.config`                                                                                       |
 | PWA         | `src/app/manifest.ts` + Serwist (`@serwist/turbopack`); worker at `src/app/sw.ts`, served by `src/app/serwist/[path]/route.ts` as `/serwist/sw.js`; disabled in `next dev` |
-| Data/auth   | Supabase (Postgres, Auth, Storage, Realtime). Not added yet; it comes in Prompt 2                                                                                          |
+| Data/auth   | Supabase (Postgres, Auth, Storage, Realtime). Schema in `supabase/migrations/`, typed client in `src/lib/supabase/`, session refresh in `src/proxy.ts`                     |
 | Motion      | Motion (motion.dev). Not added yet                                                                                                                                         |
 | AI          | Anthropic API, server-side only                                                                                                                                            |
 | Tests       | Vitest (unit), Playwright (e2e, `e2e/`)                                                                                                                                    |
@@ -32,6 +32,10 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 ### Data
 
 - **Every content table has `book_id` and Row-Level Security.** Access is enforced in the database, not only in the UI. Never disable RLS, not even temporarily.
+- Child rows (ingredients, steps, images…) reference their parent with a composite foreign key `(parent_id, book_id)`, so they can't point into another book. Follow the same pattern for new tables.
+- RLS helpers live in the unexposed `private` schema (`private.member_role`, `is_member`, `is_owner`, `can_edit_recipe`). Reuse them in new policies.
+- Any new table or policy needs cases in `supabase/tests/rls.test.ts`, and `npm run test:db` must pass.
+- Schema changes are new migrations (`npx supabase migration new <name>`), then `npm run db:types`. Never edit a migration that has been pushed.
 - **No unsaved draft state in recipe editing.** Every edit saves immediately.
 - **Metric units only** (g, kg, ml, l, °C). Convert on import.
 
@@ -60,12 +64,17 @@ npm run start         # serve the production build
 npm run lint          # ESLint + RTL class check
 npm run lint:rtl      # RTL class check only
 npm test              # Vitest unit tests (includes the RTL check over src/)
-npm run test:e2e      # Playwright e2e (builds and starts the app on :3100)
+npm run test:e2e      # Playwright e2e (builds and starts the app on :3100; needs local Supabase + .env.local)
+npm run db:start      # start local Supabase (Docker)
+npm run db:env        # write .env.local from the running local Supabase
+npm run db:reset      # re-apply all migrations to the local database
+npm run db:types      # regenerate src/lib/supabase/database.types.ts
+npm run test:db       # RLS / database integration tests (needs local Supabase)
 npm run format        # Prettier write
 npm run format:check  # Prettier check
 ```
 
-Before finishing any task, run `npm run lint`, `npm test` and `npm run build`. All three must pass.
+Before finishing any task, run `npm run lint`, `npm test` and `npm run build`. All three must pass. If the task touched the database, also run `npm run test:db`.
 
 ## Git workflow
 
