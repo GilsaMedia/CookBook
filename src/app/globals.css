@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Arial Hebrew", Heebo, Arial,
+    sans-serif;
+
+  --color-paper: #faf7f2;
+  --color-ink: #1f1b16;
+  --color-muted: #6b6258;
+  --color-rule: rgb(31 27 22 / 0.12);
+  --color-accent: #b4532a;
+}
+
+/* Matches users who asked the OS for less transparency (iOS "Reduce Transparency"). */
+@custom-variant reduced-transparency (@media (prefers-reduced-transparency: reduce));
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
