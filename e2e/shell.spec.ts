@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { signIn } from "./helpers";
 
 test("app shell renders RTL Hebrew with four bottom tabs", async ({ page }) => {
-  await page.goto("/");
+  await signIn(page);
 
   const html = page.locator("html");
   await expect(html).toHaveAttribute("lang", "he");
