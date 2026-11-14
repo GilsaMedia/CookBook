@@ -68,6 +68,7 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
+  if (pathname === "/login" || pathname.startsWith("/auth/")) return null;
 
   return (
     <nav
