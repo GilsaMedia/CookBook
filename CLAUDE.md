@@ -2,7 +2,7 @@
 
 Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private **book** of recipes; other people see a book only through a per-person invite.
 
-- Product spec: `docs/PRD.md` (Hebrew)
+- Product spec: `docs/PRD.md` (English, with Hebrew UI text)
 - Build plan and the per-session prompts: `docs/PLAN.md`
 - Next.js agent notes: `AGENTS.md`. This Next.js version is newer than most training data, so check `node_modules/next/dist/docs/` before using an API you're not sure of.
 
