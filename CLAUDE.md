@@ -75,8 +75,8 @@ Each prompt in `docs/PLAN.md` §7 is one unit of work: one branch, one pull requ
 
 1. `git status` must be clean. If it isn't, stop and ask; never discard someone's uncommitted work.
 2. Start from the latest `main`: `git fetch origin main` and branch from `origin/main`.
-3. If the previous prompt's branch isn't merged into `main` yet, stop and say so. Every prompt assumes the previous one is merged.
-4. Branch name: `prompt-NN-<short-slug>`, e.g. `prompt-02-db-rls-auth`, `prompt-03-library`. If the session assigns a branch name (cloud sessions do), use that one instead.
+3. If the previous prompt's branch isn't merged into `main` yet, stop and say so. Every prompt assumes the previous one is merged. If the owner says to continue anyway, branch from the previous prompt's branch instead (a stacked branch) and point its pull request at that branch.
+4. Branch name: `prompt-NN-<slug>`. The slug can be plainly descriptive or a joke, as long as a reader can still tell what's in the branch. Kitchen puns about the branch's content are welcome, e.g. `prompt-02-no-peeking-in-other-pots` (RLS: nobody sees another family's book), `prompt-07-the-list-that-does-the-math` (shopping list). Keep it lowercase, hyphenated, under ~50 characters, and free of personal or work details (the repo may be public). The owner can also ask for a session-assigned name instead.
 
 ### While working
 
