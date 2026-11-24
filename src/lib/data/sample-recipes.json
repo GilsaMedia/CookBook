@@ -1,8 +1,18 @@
 {
   "bookName": "ספר המתכונים לדוגמה",
   "exclusions": [
-    { "scope": "global", "recipe": null, "category": null, "ingredients": ["הל"] },
-    { "scope": "recipe", "recipe": "מרק בטטה", "category": null, "ingredients": ["פטרוזיליה"] }
+    {
+      "scope": "global",
+      "recipe": null,
+      "category": null,
+      "ingredients": ["הל"]
+    },
+    {
+      "scope": "recipe",
+      "recipe": "מרק בטטה",
+      "category": null,
+      "ingredients": ["פטרוזיליה"]
+    }
   ],
   "recipes": [
     {
@@ -99,7 +109,13 @@
         "מוסיפים שום, גזר וכמון ומערבבים דקה.",
         "מוסיפים את העדשים והמים, מביאים לרתיחה ומבשלים על אש בינונית 25 דקות.",
         "טוחנים בבלנדר מוט, מתבלים במלח ופלפל ומגישים עם פלח לימון."
-      ]
+      ],
+      "image": {
+        "file": "red-lentil-soup.jpg",
+        "author": "E4024",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Mercimek_%C3%A7orbasi.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a02",
@@ -171,7 +187,13 @@
         "מוסיפים בטטה וציר, מבשלים 30 דקות עד שהבטטה רכה.",
         "מוסיפים חלב קוקוס, טוחנים למרק חלק ומתבלים.",
         "מגישים עם פטרוזיליה קצוצה."
-      ]
+      ],
+      "image": {
+        "file": "sweet-potato-soup.jpg",
+        "author": "Missvain",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Butternut_squash_soup_-_El_Dorado_Kitchen_-_Nov_2018_-_Sarah_Stierch_01.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a03",
@@ -251,7 +273,13 @@
         "מסננים ומעבירים לקערה.",
         "מערבבים את השום, התבלינים, הלימון והשמן ויוצקים על הגזר החם.",
         "מצננים, מקררים לפחות שעה ומגישים עם כוסברה."
-      ]
+      ],
+      "image": {
+        "file": "moroccan-carrot-salad.jpg",
+        "author": "نور إسماعيل",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:A_carrot_salad.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a04",
@@ -323,7 +351,13 @@
         "טורפים את הביצים בקערה אחת ומערבבים פירורי לחם, שומשום ופפריקה בקערה שנייה.",
         "טובלים כל פרוסה בביצה ואז בפירורים ומניחים בתבנית.",
         "מרססים בשמן ואופים 18–20 דקות, הופכים באמצע."
-      ]
+      ],
+      "image": {
+        "file": "baked-chicken-schnitzel.jpg",
+        "author": "Andy Li",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Classic_chicken_schnitzel_-_Schnitzel_%26_Co._2026-05-16.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a05",
@@ -387,7 +421,13 @@
         "מניחים את הסלמון בתבנית, מפזרים שום ופרוסות לימון ומזלפים שמן זית.",
         "אופים 12–15 דקות, עד שהדג מתפרק בקלות.",
         "מפזרים שמיר ומגישים."
-      ]
+      ],
+      "image": {
+        "file": "lemon-garlic-salmon.jpg",
+        "author": "MOs810",
+        "license": "CC BY-SA 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Baked_salmon_with_dill_and_lemon.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a06",
@@ -459,7 +499,13 @@
         "מוסיפים עגבניות, רסק ופפריקה ומבשלים 15 דקות עד שהרוטב מסמיך.",
         "יוצרים גומות ברוטב ושוברים לתוכן את הביצים.",
         "מכסים ומבשלים 5–7 דקות, עד שהחלבון יציב."
-      ]
+      ],
+      "image": {
+        "file": "shakshuka.jpg",
+        "author": "Calliopejen1",
+        "license": "CC BY-SA 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Shakshuka_by_Calliopejen1.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a07",
@@ -514,7 +560,13 @@
         "מחממים תנור ל־220°C.",
         "מערבבים את תפוחי האדמה עם שמן, מלח ורוזמרין ומפזרים בשכבה אחת בתבנית.",
         "אופים 40–45 דקות, מערבבים פעם אחת באמצע, עד שהם זהובים ופריכים."
-      ]
+      ],
+      "image": {
+        "file": "rosemary-roast-potatoes.jpg",
+        "author": "白洛嘉",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Roasted_potatoes_with_rosemary_and_gralic_and_black_pepper.jpg"
+      }
     },
     {
       "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a08",
@@ -594,7 +646,13 @@
         "מערבבים בקערה ביצים, סוכר, מיץ תפוזים, גרידה ושמן.",
         "מוסיפים קמח והל ומערבבים רק עד שהבלילה אחידה.",
         "יוצקים לתבנית ואופים 40–45 דקות, עד שקיסם יוצא יבש."
-      ]
+      ],
+      "image": {
+        "file": "orange-cardamom-cake.jpg",
+        "author": "روتانا",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Orange_Cake.jpg"
+      }
     }
   ]
 }

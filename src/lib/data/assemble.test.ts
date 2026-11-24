@@ -5,7 +5,7 @@ import { SAMPLE_RECIPES, sampleRows } from "./sample";
 
 describe("sample library", () => {
   const rows = sampleRows();
-  const library = assembleLibrary({ bookName: "x", ...rows, images: new Map() });
+  const library = assembleLibrary({ bookName: "x", ...rows });
 
   it("has 8 Hebrew sample recipes sorted by title", () => {
     expect(library.recipes).toHaveLength(8);

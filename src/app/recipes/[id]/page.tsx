@@ -55,11 +55,25 @@ export default async function RecipePage({ params }: Props) {
         {he.recipe.back}
       </Link>
 
-      <RecipeImage
-        id={recipe.id}
-        url={recipe.imageUrl}
-        className="-mx-4 aspect-[4/3] max-h-[50vh] w-[calc(100%+2rem)] md:mx-0 md:aspect-[16/9] md:w-full md:rounded-3xl"
-      />
+      <figure className="flex flex-col gap-1">
+        <RecipeImage
+          id={recipe.id}
+          url={recipe.imageUrl}
+          className="-mx-4 aspect-[4/3] max-h-[50vh] w-[calc(100%_+_2rem)] max-w-none md:mx-0 md:aspect-[16/9] md:w-full md:rounded-3xl"
+        />
+        {recipe.imageCredit && (
+          <figcaption className="text-xs text-muted">
+            <a
+              href={recipe.imageCredit.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              {he.recipe.photoCredit(recipe.imageCredit.author, recipe.imageCredit.license)}
+            </a>
+          </figcaption>
+        )}
+      </figure>
 
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl leading-tight font-bold">{recipe.title}</h1>

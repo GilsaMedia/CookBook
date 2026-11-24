@@ -1,5 +1,6 @@
+import { withBase } from "@/lib/demo";
 import { normalizeHebrew } from "@/lib/search/hebrew";
-import type { DishRole, Exclusion } from "@/lib/recipes/types";
+import type { DishRole, Exclusion, ImageCredit } from "@/lib/recipes/types";
 import type { Database } from "@/lib/supabase/database.types";
 import type { CategoryRow, IngredientRow, RecipeRow, StepRow } from "./assemble";
 import sample from "./sample-recipes.json";
@@ -32,6 +33,8 @@ export type SampleRecipe = {
     optional: boolean;
   }[];
   steps: string[];
+  /** A photo in public/sample-photos, with its Commons attribution. */
+  image: { file: string; author: string; license: string; source_url: string } | null;
 };
 
 export const SAMPLE_BOOK_NAME: string = sample.bookName;
@@ -97,6 +100,19 @@ export function sampleRows() {
     );
   }
 
+  // Demo photos are static files; the real app signs Storage URLs instead.
+  const images = new Map<string, string>();
+  const credits = new Map<string, ImageCredit>();
+  for (const r of SAMPLE_RECIPES) {
+    if (!r.image) continue;
+    images.set(r.id, withBase(`/sample-photos/${r.image.file}`));
+    credits.set(r.id, {
+      author: r.image.author,
+      license: r.image.license,
+      sourceUrl: r.image.source_url,
+    });
+  }
+
   const byTitle = new Map(SAMPLE_RECIPES.map((r) => [r.title, r.id]));
   const exclusions: Exclusion[] = sample.exclusions.map((e) => ({
     scope: e.scope as Exclusion["scope"],
@@ -105,5 +121,5 @@ export function sampleRows() {
     ingredients: e.ingredients,
   }));
 
-  return { categories, recipes, ingredients, steps, exclusions };
+  return { categories, recipes, ingredients, steps, exclusions, images, credits };
 }

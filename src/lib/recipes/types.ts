@@ -35,8 +35,12 @@ export type RecipeStep = {
   text: string;
 };
 
+/** Attribution for a photo that isn't the family's own (e.g. the demo's Commons photos). */
+export type ImageCredit = { author: string; license: string; sourceUrl: string };
+
 /** Everything the recipe page shows. */
 export type RecipeDetail = Omit<RecipeCard, "searchText"> & {
+  imageCredit: ImageCredit | null;
   sourceName: string | null;
   sourceUrl: string | null;
   servings: number | null;

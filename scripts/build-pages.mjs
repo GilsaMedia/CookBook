@@ -8,7 +8,7 @@
  * the build runs on a temporary copy (.pages-build/) without them. The real
  * app is untouched.
  *
- *   PAGES_BASE_PATH=/cookbook-demo npm run build:pages
+ *   PAGES_BASE_PATH=/CookBook npm run build:pages
  */
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const work = path.join(root, ".pages-build");
 const out = path.join(root, "out");
-const basePath = process.env.PAGES_BASE_PATH ?? "/cookbook-demo";
+const basePath = process.env.PAGES_BASE_PATH ?? "/CookBook";
 
 const SKIP = new Set([
   "node_modules",

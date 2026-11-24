@@ -58,8 +58,15 @@ export async function ownedBookId(db, userId) {
   return row.book_id;
 }
 
-/** Replaces the book's recipes and preferences with the sample set. */
+/** Replaces the book's recipes, photos and preferences with the sample set. */
 export async function seedSampleBook(db, bookId) {
+  // Deleting recipes cascades to recipe_images rows, but not to the files.
+  const { data: folders } = await db.storage.from("recipe-images").list(bookId);
+  for (const folder of folders ?? []) {
+    const { data: files } = await db.storage.from("recipe-images").list(`${bookId}/${folder.name}`);
+    const paths = (files ?? []).map((f) => `${bookId}/${folder.name}/${f.name}`);
+    if (paths.length) check(await db.storage.from("recipe-images").remove(paths));
+  }
   check(await db.from("recipes").delete().eq("book_id", bookId));
   check(await db.from("preferences").delete().eq("book_id", bookId));
 
@@ -93,6 +100,22 @@ export async function seedSampleBook(db, bookId) {
         .single(),
     );
     recipeIds.set(r.title, id);
+
+    if (r.image) {
+      // Private bucket; the path must start with book_id/recipe_id/ (RLS).
+      const storagePath = `${bookId}/${id}/${r.image.file}`;
+      const bytes = readFileSync(path.join(here, "../public/sample-photos", r.image.file));
+      check(
+        await db.storage
+          .from("recipe-images")
+          .upload(storagePath, bytes, { contentType: "image/jpeg", upsert: true }),
+      );
+      check(
+        await db
+          .from("recipe_images")
+          .insert({ recipe_id: id, book_id: bookId, storage_path: storagePath, position: 0 }),
+      );
+    }
 
     check(
       await db.from("ingredients").insert(

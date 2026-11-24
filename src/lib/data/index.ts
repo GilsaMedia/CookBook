@@ -5,7 +5,7 @@ import { SAMPLE_BOOK_NAME, sampleRows } from "./sample";
 
 function demoLibrary(): Library {
   const rows = sampleRows();
-  return assembleLibrary({ bookName: SAMPLE_BOOK_NAME, ...rows, images: new Map() });
+  return assembleLibrary({ bookName: SAMPLE_BOOK_NAME, ...rows });
 }
 
 function demoRecipe(id: string): RecipeDetail | null {
@@ -18,7 +18,8 @@ function demoRecipe(id: string): RecipeDetail | null {
     ingredients: rows.ingredients.filter((i) => i.recipe_id === id),
     steps: rows.steps.filter((s) => s.recipe_id === id),
     exclusions: rows.exclusions,
-    imageUrl: null,
+    imageUrl: rows.images.get(id) ?? null,
+    imageCredit: rows.credits.get(id) ?? null,
   });
 }
 

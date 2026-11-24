@@ -29,6 +29,7 @@ export const he = {
   recipe: {
     back: "לספרייה",
     sourcePrefix: "מקור:",
+    photoCredit: (author: string, license: string) => `צילום: ${author} · ${license}`,
     opensInNewTab: "(נפתח בלשונית חדשה)",
     addToMeal: "הוספה לארוחה +",
     cookMode: "מצב בישול",

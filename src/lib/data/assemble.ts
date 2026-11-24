@@ -3,6 +3,7 @@ import type {
   CategorySummary,
   DishRole,
   Exclusion,
+  ImageCredit,
   Library,
   RecipeCard,
   RecipeDetail,
@@ -117,6 +118,7 @@ export function assembleRecipe(input: {
   steps: StepRow[];
   exclusions: Exclusion[];
   imageUrl: string | null;
+  imageCredit?: ImageCredit | null;
 }): RecipeDetail {
   const { recipe } = input;
   const ingredients = [...input.ingredients].sort((a, b) => a.position - b.position);
@@ -132,6 +134,7 @@ export function assembleRecipe(input: {
   void _searchText;
   return {
     ...base,
+    imageCredit: input.imageCredit ?? null,
     sourceName: recipe.source_name,
     sourceUrl: recipe.source_url,
     servings: recipe.servings,
