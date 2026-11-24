@@ -1,7 +1,8 @@
 "use client";
 
+import type { Session } from "@supabase/supabase-js";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { isPublicPath } from "@/lib/auth/redirect";
 import { isDemo } from "@/lib/demo";
 import { useSession } from "./AuthProvider";
@@ -16,9 +17,16 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const open = isDemo || isPublicPath(pathname);
+  const previous = useRef<Session | null | undefined>(undefined);
 
   useEffect(() => {
-    if (open || session !== null) return;
+    const was = previous.current;
+    previous.current = session;
+    if (session !== null) return;
+    // Signing out (here or in another tab) goes to a plain /login: there's
+    // nothing to come back to.
+    if (was) return router.replace("/login");
+    if (open) return;
     const here = pathname + window.location.search;
     router.replace(`/login?next=${encodeURIComponent(here)}`);
   }, [open, session, pathname, router]);
