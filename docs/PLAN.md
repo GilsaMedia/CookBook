@@ -29,7 +29,7 @@ Features in the existing doc that the app must keep, because the family already 
 | PWA                 | Serwist (service worker) + web manifest                            | Install to home screen, offline reading later                                                                                                                    |
 | Styling             | Tailwind with **logical properties only** (`ms-`, `pe-`, `start-`) | RTL correctness by construction                                                                                                                                  |
 | Motion              | Motion (motion.dev) springs                                        | Interruptible sheets/drawers (see §5)                                                                                                                            |
-| AI                  | Anthropic API, server-side only                                    | Extraction, translation, OCR, ingredient normalization. Model names in env vars                                                                                  |
+| AI                  | Claude (subscription via headless Claude Code, or Anthropic API), server-side only | Extraction, translation, OCR, ingredient normalization. Model names in env vars                                                                                  |
 | Hosting             | Vercel + Supabase cloud                                            | Zero-ops                                                                                                                                                         |
 
 **Hebrew search note:** Postgres full-text search has no Hebrew stemmer. Use `pg_trgm` trigram search on a normalized column (niqqud stripped, final letters ך/ם/ן/ף/ץ folded) — it handles plurals and typos well enough for a few hundred recipes per book.
@@ -243,7 +243,7 @@ After each step: ✅ [what was done] — [files]
 Let the book owner add a recipe from a URL or pasted text, review the extraction, and save it.
 
 ## Context
-Read CLAUDE.md, PRD §7 and §13.3 (screen 7). Env vars: ANTHROPIC_API_KEY, AI_MODEL_EXTRACT (default claude-sonnet-5-5), AI_MODEL_FAST (default claude-haiku-5-5).
+Read CLAUDE.md, PRD §7 and §13.3 (screen 7). AI provider per CLAUDE.md: headless Claude Code with CLAUDE_CODE_OAUTH_TOKEN (the owner's Claude subscription), falling back to ANTHROPIC_API_KEY. Env vars: CLAUDE_CODE_OAUTH_TOKEN, ANTHROPIC_API_KEY, AI_PROVIDER, AI_MODEL_EXTRACT (default sonnet), AI_MODEL_FAST (default haiku).
 
 ## Target State
 - Server route /api/import/url: fetch page server-side; if schema.org Recipe JSON-LD exists, map it; else send cleaned page text to AI_MODEL_EXTRACT with a strict JSON schema (title, servings, times, ingredients[{display_text, quantity, unit, canonical_name, section, optional}], steps[], dish_role, uses_oven, oven_temp, make_ahead, cuisine, confidence per field, source_language).

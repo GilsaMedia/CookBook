@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:pages": "node scripts/build-pages.mjs",
     "lint": "eslint && node scripts/check-rtl-classes.mjs",
     "lint:rtl": "node scripts/check-rtl-classes.mjs",
     "format": "prettier --write .",
@@ -18,7 +19,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts && prettier --write src/lib/supabase/database.types.ts",
-    "db:env": "node scripts/local-env.mjs"
+    "db:env": "node scripts/local-env.mjs",
+    "db:seed": "node scripts/seed-sample-book.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

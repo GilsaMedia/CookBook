@@ -1,0 +1,658 @@
+{
+  "bookName": "ספר המתכונים לדוגמה",
+  "exclusions": [
+    {
+      "scope": "global",
+      "recipe": null,
+      "category": null,
+      "ingredients": ["הל"]
+    },
+    {
+      "scope": "recipe",
+      "recipe": "מרק בטטה",
+      "category": null,
+      "ingredients": ["פטרוזיליה"]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a01",
+      "title": "מרק עדשים כתומות",
+      "category": "מרקים",
+      "source_name": "מתכון לדוגמה",
+      "source_url": "https://example.com/recipes/red-lentil-soup",
+      "servings": 6,
+      "prep_time": 15,
+      "cook_time": 30,
+      "dish_role": "soup",
+      "cuisine": "מזרח תיכונית",
+      "uses_oven": false,
+      "oven_temp": null,
+      "uses_stovetop": true,
+      "make_ahead": true,
+      "ingredients": [
+        {
+          "display_text": "2 כוסות עדשים כתומות, שטופות",
+          "quantity": 480,
+          "unit": "ml",
+          "canonical_name": "עדשים כתומות",
+          "section": "dry_goods",
+          "optional": false
+        },
+        {
+          "display_text": "1 בצל גדול, קצוץ",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "בצל",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "2 גזרים, קלופים ופרוסים",
+          "quantity": 2,
+          "unit": "unit",
+          "canonical_name": "גזר",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "3 שיני שום",
+          "quantity": 3,
+          "unit": "unit",
+          "canonical_name": "שום",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 כפית כמון",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "כמון",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "2 כפות שמן זית",
+          "quantity": 30,
+          "unit": "ml",
+          "canonical_name": "שמן זית",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "1.5 ליטר מים",
+          "quantity": 1500,
+          "unit": "ml",
+          "canonical_name": "מים",
+          "section": "other",
+          "optional": false
+        },
+        {
+          "display_text": "מלח ופלפל שחור",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "מלח",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "פלחי לימון להגשה",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "לימון",
+          "section": "produce",
+          "optional": true
+        }
+      ],
+      "steps": [
+        "מחממים שמן זית בסיר גדול ומטגנים את הבצל עד שהוא שקוף, כ־5 דקות.",
+        "מוסיפים שום, גזר וכמון ומערבבים דקה.",
+        "מוסיפים את העדשים והמים, מביאים לרתיחה ומבשלים על אש בינונית 25 דקות.",
+        "טוחנים בבלנדר מוט, מתבלים במלח ופלפל ומגישים עם פלח לימון."
+      ],
+      "image": {
+        "file": "red-lentil-soup.jpg",
+        "author": "E4024",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Mercimek_%C3%A7orbasi.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a02",
+      "title": "מרק בטטה",
+      "category": "מרקים",
+      "source_name": null,
+      "source_url": null,
+      "servings": 6,
+      "prep_time": 15,
+      "cook_time": 35,
+      "dish_role": "soup",
+      "cuisine": null,
+      "uses_oven": false,
+      "oven_temp": null,
+      "uses_stovetop": true,
+      "make_ahead": true,
+      "ingredients": [
+        {
+          "display_text": "1 ק\"ג בטטות, קלופות וחתוכות לקוביות",
+          "quantity": 1000,
+          "unit": "g",
+          "canonical_name": "בטטה",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 בצל, קצוץ",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "בצל",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 כף ג'ינג'ר מגורר",
+          "quantity": 15,
+          "unit": "ml",
+          "canonical_name": "ג'ינג'ר",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 ליטר ציר ירקות",
+          "quantity": 1000,
+          "unit": "ml",
+          "canonical_name": "ציר ירקות",
+          "section": "canned_sauces",
+          "optional": false
+        },
+        {
+          "display_text": "1 פחית חלב קוקוס (400 מ\"ל)",
+          "quantity": 400,
+          "unit": "ml",
+          "canonical_name": "חלב קוקוס",
+          "section": "canned_sauces",
+          "optional": false
+        },
+        {
+          "display_text": "פטרוזיליה קצוצה לקישוט",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "פטרוזיליה",
+          "section": "produce",
+          "optional": true
+        }
+      ],
+      "steps": [
+        "מטגנים את הבצל עד הזהבה ומוסיפים את הג'ינג'ר.",
+        "מוסיפים בטטה וציר, מבשלים 30 דקות עד שהבטטה רכה.",
+        "מוסיפים חלב קוקוס, טוחנים למרק חלק ומתבלים.",
+        "מגישים עם פטרוזיליה קצוצה."
+      ],
+      "image": {
+        "file": "sweet-potato-soup.jpg",
+        "author": "Missvain",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Butternut_squash_soup_-_El_Dorado_Kitchen_-_Nov_2018_-_Sarah_Stierch_01.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a03",
+      "title": "סלט גזר מרוקאי",
+      "category": "סלטים",
+      "source_name": "מתכון לדוגמה",
+      "source_url": "https://example.com/recipes/moroccan-carrot-salad",
+      "servings": 4,
+      "prep_time": 15,
+      "cook_time": 10,
+      "dish_role": "salad",
+      "cuisine": "מרוקאית",
+      "uses_oven": false,
+      "oven_temp": null,
+      "uses_stovetop": true,
+      "make_ahead": true,
+      "ingredients": [
+        {
+          "display_text": "6 גזרים, פרוסים לעיגולים",
+          "quantity": 6,
+          "unit": "unit",
+          "canonical_name": "גזר",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "3 שיני שום, כתושות",
+          "quantity": 3,
+          "unit": "unit",
+          "canonical_name": "שום",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 כפית פפריקה מתוקה",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "פפריקה",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "חצי כפית כמון",
+          "quantity": 2.5,
+          "unit": "ml",
+          "canonical_name": "כמון",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "מיץ מלימון אחד",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "לימון",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "3 כפות שמן זית",
+          "quantity": 45,
+          "unit": "ml",
+          "canonical_name": "שמן זית",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "כוסברה קצוצה לקישוט",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "כוסברה",
+          "section": "produce",
+          "optional": true
+        }
+      ],
+      "steps": [
+        "מבשלים את הגזר במים רותחים עם מלח 8–10 דקות, עד שהוא רך אבל עדיין נשמר.",
+        "מסננים ומעבירים לקערה.",
+        "מערבבים את השום, התבלינים, הלימון והשמן ויוצקים על הגזר החם.",
+        "מצננים, מקררים לפחות שעה ומגישים עם כוסברה."
+      ],
+      "image": {
+        "file": "moroccan-carrot-salad.jpg",
+        "author": "نور إسماعيل",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:A_carrot_salad.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a04",
+      "title": "שניצל עוף אפוי",
+      "category": "מנות עיקריות – בשר ועוף",
+      "source_name": null,
+      "source_url": null,
+      "servings": 4,
+      "prep_time": 20,
+      "cook_time": 20,
+      "dish_role": "main",
+      "cuisine": null,
+      "uses_oven": true,
+      "oven_temp": 200,
+      "uses_stovetop": false,
+      "make_ahead": false,
+      "ingredients": [
+        {
+          "display_text": "600 גרם חזה עוף, פרוס דק",
+          "quantity": 600,
+          "unit": "g",
+          "canonical_name": "חזה עוף",
+          "section": "meat_fish",
+          "optional": false
+        },
+        {
+          "display_text": "2 ביצים",
+          "quantity": 2,
+          "unit": "unit",
+          "canonical_name": "ביצה",
+          "section": "dairy_eggs",
+          "optional": false
+        },
+        {
+          "display_text": "1.5 כוסות פירורי לחם",
+          "quantity": 360,
+          "unit": "ml",
+          "canonical_name": "פירורי לחם",
+          "section": "bakery",
+          "optional": false
+        },
+        {
+          "display_text": "2 כפות שומשום",
+          "quantity": 30,
+          "unit": "ml",
+          "canonical_name": "שומשום",
+          "section": "nuts_dried_fruit",
+          "optional": true
+        },
+        {
+          "display_text": "1 כפית פפריקה",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "פפריקה",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "תרסיס שמן",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "שמן",
+          "section": "spices_oils",
+          "optional": false
+        }
+      ],
+      "steps": [
+        "מחממים תנור ל־200°C ומרפדים תבנית בנייר אפייה.",
+        "טורפים את הביצים בקערה אחת ומערבבים פירורי לחם, שומשום ופפריקה בקערה שנייה.",
+        "טובלים כל פרוסה בביצה ואז בפירורים ומניחים בתבנית.",
+        "מרססים בשמן ואופים 18–20 דקות, הופכים באמצע."
+      ],
+      "image": {
+        "file": "baked-chicken-schnitzel.jpg",
+        "author": "Andy Li",
+        "license": "CC0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Classic_chicken_schnitzel_-_Schnitzel_%26_Co._2026-05-16.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a05",
+      "title": "סלמון בתנור עם לימון ושום",
+      "category": "דגים",
+      "source_name": "מתכון לדוגמה",
+      "source_url": "https://example.com/recipes/lemon-garlic-salmon",
+      "servings": 4,
+      "prep_time": 10,
+      "cook_time": 15,
+      "dish_role": "main",
+      "cuisine": null,
+      "uses_oven": true,
+      "oven_temp": 220,
+      "uses_stovetop": false,
+      "make_ahead": false,
+      "ingredients": [
+        {
+          "display_text": "4 נתחי סלמון (כ־180 גרם כל אחד)",
+          "quantity": 720,
+          "unit": "g",
+          "canonical_name": "סלמון",
+          "section": "meat_fish",
+          "optional": false
+        },
+        {
+          "display_text": "4 שיני שום, פרוסות",
+          "quantity": 4,
+          "unit": "unit",
+          "canonical_name": "שום",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 לימון, פרוס",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "לימון",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "2 כפות שמן זית",
+          "quantity": 30,
+          "unit": "ml",
+          "canonical_name": "שמן זית",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "שמיר טרי",
+          "quantity": null,
+          "unit": null,
+          "canonical_name": "שמיר",
+          "section": "produce",
+          "optional": true
+        }
+      ],
+      "steps": [
+        "מחממים תנור ל־220°C.",
+        "מניחים את הסלמון בתבנית, מפזרים שום ופרוסות לימון ומזלפים שמן זית.",
+        "אופים 12–15 דקות, עד שהדג מתפרק בקלות.",
+        "מפזרים שמיר ומגישים."
+      ],
+      "image": {
+        "file": "lemon-garlic-salmon.jpg",
+        "author": "MOs810",
+        "license": "CC BY-SA 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Baked_salmon_with_dill_and_lemon.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a06",
+      "title": "שקשוקה",
+      "category": "צמחוני וטבעוני",
+      "source_name": null,
+      "source_url": null,
+      "servings": 3,
+      "prep_time": 10,
+      "cook_time": 25,
+      "dish_role": "main",
+      "cuisine": "צפון אפריקאית",
+      "uses_oven": false,
+      "oven_temp": null,
+      "uses_stovetop": true,
+      "make_ahead": false,
+      "ingredients": [
+        {
+          "display_text": "6 עגבניות בשלות, חתוכות לקוביות",
+          "quantity": 6,
+          "unit": "unit",
+          "canonical_name": "עגבנייה",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 פלפל אדום, חתוך לרצועות",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "פלפל אדום",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "4 שיני שום",
+          "quantity": 4,
+          "unit": "unit",
+          "canonical_name": "שום",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "2 כפות רסק עגבניות",
+          "quantity": 30,
+          "unit": "ml",
+          "canonical_name": "רסק עגבניות",
+          "section": "canned_sauces",
+          "optional": false
+        },
+        {
+          "display_text": "6 ביצים",
+          "quantity": 6,
+          "unit": "unit",
+          "canonical_name": "ביצה",
+          "section": "dairy_eggs",
+          "optional": false
+        },
+        {
+          "display_text": "1 כפית פפריקה מתוקה",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "פפריקה",
+          "section": "spices_oils",
+          "optional": false
+        }
+      ],
+      "steps": [
+        "מטגנים פלפל ושום במחבת רחבה 5 דקות.",
+        "מוסיפים עגבניות, רסק ופפריקה ומבשלים 15 דקות עד שהרוטב מסמיך.",
+        "יוצרים גומות ברוטב ושוברים לתוכן את הביצים.",
+        "מכסים ומבשלים 5–7 דקות, עד שהחלבון יציב."
+      ],
+      "image": {
+        "file": "shakshuka.jpg",
+        "author": "Calliopejen1",
+        "license": "CC BY-SA 3.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Shakshuka_by_Calliopejen1.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a07",
+      "title": "תפוחי אדמה אפויים ברוזמרין",
+      "category": "תוספות",
+      "source_name": null,
+      "source_url": null,
+      "servings": 4,
+      "prep_time": 10,
+      "cook_time": 45,
+      "dish_role": "side",
+      "cuisine": null,
+      "uses_oven": true,
+      "oven_temp": 220,
+      "uses_stovetop": false,
+      "make_ahead": false,
+      "ingredients": [
+        {
+          "display_text": "1 ק\"ג תפוחי אדמה קטנים, חצויים",
+          "quantity": 1000,
+          "unit": "g",
+          "canonical_name": "תפוח אדמה",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "3 כפות שמן זית",
+          "quantity": 45,
+          "unit": "ml",
+          "canonical_name": "שמן זית",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "2 ענפי רוזמרין",
+          "quantity": 2,
+          "unit": "unit",
+          "canonical_name": "רוזמרין",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "1 כפית מלח גס",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "מלח גס",
+          "section": "spices_oils",
+          "optional": false
+        }
+      ],
+      "steps": [
+        "מחממים תנור ל־220°C.",
+        "מערבבים את תפוחי האדמה עם שמן, מלח ורוזמרין ומפזרים בשכבה אחת בתבנית.",
+        "אופים 40–45 דקות, מערבבים פעם אחת באמצע, עד שהם זהובים ופריכים."
+      ],
+      "image": {
+        "file": "rosemary-roast-potatoes.jpg",
+        "author": "白洛嘉",
+        "license": "CC BY-SA 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Roasted_potatoes_with_rosemary_and_gralic_and_black_pepper.jpg"
+      }
+    },
+    {
+      "id": "0b9f3a52-7c1e-4d0a-9a51-0f6f3c2e1a08",
+      "title": "עוגת תפוזים בחושה עם הל",
+      "category": "עוגות",
+      "source_name": null,
+      "source_url": null,
+      "servings": 12,
+      "prep_time": 15,
+      "cook_time": 45,
+      "dish_role": "dessert",
+      "cuisine": null,
+      "uses_oven": true,
+      "oven_temp": 175,
+      "uses_stovetop": false,
+      "make_ahead": true,
+      "ingredients": [
+        {
+          "display_text": "4 ביצים",
+          "quantity": 4,
+          "unit": "unit",
+          "canonical_name": "ביצה",
+          "section": "dairy_eggs",
+          "optional": false
+        },
+        {
+          "display_text": "1 כוס סוכר",
+          "quantity": 240,
+          "unit": "ml",
+          "canonical_name": "סוכר",
+          "section": "baking",
+          "optional": false
+        },
+        {
+          "display_text": "1 כוס מיץ תפוזים",
+          "quantity": 240,
+          "unit": "ml",
+          "canonical_name": "מיץ תפוזים",
+          "section": "drinks",
+          "optional": false
+        },
+        {
+          "display_text": "גרידה מתפוז אחד",
+          "quantity": 1,
+          "unit": "unit",
+          "canonical_name": "תפוז",
+          "section": "produce",
+          "optional": false
+        },
+        {
+          "display_text": "3/4 כוס שמן",
+          "quantity": 180,
+          "unit": "ml",
+          "canonical_name": "שמן",
+          "section": "spices_oils",
+          "optional": false
+        },
+        {
+          "display_text": "2 כוסות קמח תופח",
+          "quantity": 480,
+          "unit": "ml",
+          "canonical_name": "קמח תופח",
+          "section": "baking",
+          "optional": false
+        },
+        {
+          "display_text": "1 כפית הל טחון",
+          "quantity": 5,
+          "unit": "ml",
+          "canonical_name": "הל",
+          "section": "spices_oils",
+          "optional": false
+        }
+      ],
+      "steps": [
+        "מחממים תנור ל־175°C ומשמנים תבנית אינגליש קייק.",
+        "מערבבים בקערה ביצים, סוכר, מיץ תפוזים, גרידה ושמן.",
+        "מוסיפים קמח והל ומערבבים רק עד שהבלילה אחידה.",
+        "יוצקים לתבנית ואופים 40–45 דקות, עד שקיסם יוצא יבש."
+      ],
+      "image": {
+        "file": "orange-cardamom-cake.jpg",
+        "author": "روتانا",
+        "license": "CC BY 4.0",
+        "source_url": "https://commons.wikimedia.org/wiki/File:Orange_Cake.jpg"
+      }
+    }
+  ]
+}

@@ -485,6 +485,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      keepalive: { Args: never; Returns: string };
       normalize_hebrew: { Args: { input: string }; Returns: string };
     };
     Enums: {

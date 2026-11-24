@@ -1,2 +1,3 @@
 -- Local development seed. Intentionally empty: books are created by the
--- signup trigger. Sample recipes arrive with Prompt 3.
+-- signup trigger. For sample recipes run `npm run db:seed` (see
+-- scripts/seed-sample-book.mjs).

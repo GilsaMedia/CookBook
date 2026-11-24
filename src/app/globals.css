@@ -26,3 +26,27 @@ body {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
+
+/*
+ * Press feedback on pointer-down (PLAN §5): every tappable element shrinks
+ * slightly the moment it's touched. iOS only applies :active when the page
+ * has a touchstart listener; <PressFeedback /> adds one.
+ */
+@utility press {
+  transition: transform 100ms ease-out;
+  -webkit-user-select: none;
+  user-select: none;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Sideways-scrolling rows (category chips) without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
