@@ -11,7 +11,15 @@
  *   PAGES_BASE_PATH=/CookBook npm run build:pages
  */
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,6 +46,11 @@ for (const entry of readdirSync(root)) {
 }
 symlinkSync(path.join(root, "node_modules"), path.join(work, "node_modules"), "dir");
 for (const p of SERVER_ONLY) rmSync(path.join(work, p), { recursive: true, force: true });
+// Prerender the sample recipes (see src/app/recipes/[id]/demo-static-params.ts).
+appendFileSync(
+  path.join(work, "src/app/recipes/[id]/page.tsx"),
+  '\nexport { generateStaticParams } from "./demo-static-params";\n',
+);
 
 execFileSync(path.join(root, "node_modules/.bin/next"), ["build"], {
   cwd: work,

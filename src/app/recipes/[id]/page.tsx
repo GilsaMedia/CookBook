@@ -4,15 +4,14 @@ import { notFound } from "next/navigation";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
 import { WarningChip } from "@/components/recipe/WarningChip";
 import { he } from "@/i18n/he";
-import { getRecipe, staticRecipeIds } from "@/lib/data";
+import { getRecipe } from "@/lib/data";
 import { formatMinutes } from "@/lib/recipes/format";
 
 type Props = { params: Promise<{ id: string }> };
 
-/** Only the static demo build prerenders recipes; otherwise pages render per request. */
-export function generateStaticParams() {
-  return staticRecipeIds().map((id) => ({ id }));
-}
+// No generateStaticParams here: even an empty one makes Next prerender each
+// recipe on first visit, which breaks the per-user Supabase session. The
+// static demo build adds it from ./demo-static-params.ts.
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const recipe = await getRecipe((await params).id);
