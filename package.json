@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "build:pages": "node scripts/build-pages.mjs",
     "lint": "eslint && node scripts/check-rtl-classes.mjs",
     "lint:rtl": "node scripts/check-rtl-classes.mjs",
     "format": "prettier --write .",

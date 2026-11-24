@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 import { he } from "@/i18n/he";
 import { withBase } from "@/lib/demo";
 
+// Required by the static Pages export; the manifest never varies per request.
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: he.app.name,

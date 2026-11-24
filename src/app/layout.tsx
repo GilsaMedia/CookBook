@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: he.app.description,
   appleWebApp: { capable: true, title: he.app.name, statusBarStyle: "default" },
   formatDetection: { telephone: false },
-  icons: { apple: withBase("/icons/apple-touch-icon.png") },
+  icons: { icon: withBase("/favicon.ico"), apple: withBase("/icons/apple-touch-icon.png") },
 };
 
 export const viewport: Viewport = {
