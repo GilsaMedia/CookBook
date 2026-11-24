@@ -1,30 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
 import { WarningChip } from "@/components/recipe/WarningChip";
 import { he } from "@/i18n/he";
-import { getRecipe } from "@/lib/data";
 import { formatMinutes } from "@/lib/recipes/format";
-
-type Props = { params: Promise<{ id: string }> };
-
-// No generateStaticParams here: even an empty one makes Next prerender each
-// recipe on first visit, which breaks the per-user Supabase session. The
-// static demo build adds it from ./demo-static-params.ts.
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const recipe = await getRecipe((await params).id);
-  return { title: recipe?.title ?? he.recipe.notFound };
-}
+import type { RecipeDetail } from "@/lib/recipes/types";
 
 const chip = "inline-flex items-center rounded-full bg-white px-3 py-1 text-sm ring-1 ring-rule";
 
-/** Recipe page (screen 2). */
-export default async function RecipePage({ params }: Props) {
-  const recipe = await getRecipe((await params).id);
-  if (!recipe) notFound();
-
+/** Recipe page (screen 2): the view, given a loaded recipe. */
+export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
   const chips = [
     recipe.categoryName,
     recipe.dishRole ? he.dishRole[recipe.dishRole] : null,

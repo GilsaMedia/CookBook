@@ -15,6 +15,10 @@ export const he = {
     shopping: "קניות",
     add: "הוספה",
   },
+  common: {
+    loading: "טוענים…",
+    loadFailed: "לא הצלחנו לטעון. כדאי לבדוק את החיבור ולנסות שוב.",
+  },
   library: {
     searchLabel: "חיפוש מתכון",
     searchPlaceholder: "חיפוש מתכון או מצרך…",

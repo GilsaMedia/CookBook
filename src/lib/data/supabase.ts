@@ -1,13 +1,15 @@
-import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/database.types";
 import type { Exclusion, Library, RecipeDetail } from "@/lib/recipes/types";
 import { assembleLibrary, assembleRecipe } from "./assemble";
 
 const IMAGE_BUCKET = "recipe-images";
-// Signed image links last an hour; pages are rendered per request.
+// Signed image links last an hour; screens reload data when opened.
 const IMAGE_TTL_SECONDS = 60 * 60;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type Db = Awaited<ReturnType<typeof createClient>>;
+type Db = SupabaseClient<Database>;
 
 /**
  * The book the library shows: the one the user owns, else the first book
@@ -71,7 +73,7 @@ const RECIPE_COLUMNS =
 
 /** The signed-in user's library. Viewers only get approved recipes (RLS). */
 export async function supabaseLibrary(): Promise<Library> {
-  const db = await createClient();
+  const db = supabase();
   const book = await currentBook(db);
   if (!book) return { bookName: null, categories: [], recipes: [] };
 
@@ -100,7 +102,7 @@ export async function supabaseLibrary(): Promise<Library> {
 /** One recipe, or null when it doesn't exist or RLS hides it. */
 export async function supabaseRecipe(id: string): Promise<RecipeDetail | null> {
   if (!UUID.test(id)) return null;
-  const db = await createClient();
+  const db = supabase();
   const { data: recipe, error } = await db
     .from("recipes")
     .select(`${RECIPE_COLUMNS}, book_id, categories(name)`)

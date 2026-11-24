@@ -119,7 +119,7 @@ export function LibraryView({ library }: { library: Library }) {
           {results.map((r) => (
             <li key={r.id} className="min-w-0">
               <Link
-                href={`/recipes/${r.id}`}
+                href={`/recipe?id=${r.id}`}
                 className="press flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule"
               >
                 <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />

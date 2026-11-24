@@ -64,7 +64,7 @@ const tabs: Tab[] = [
 
 function isActive(pathname: string, href: string) {
   // Recipe pages belong to the library tab.
-  if (href === "/") return pathname === "/" || pathname.startsWith("/recipes/");
+  if (href === "/") return pathname === "/" || pathname === "/recipe";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

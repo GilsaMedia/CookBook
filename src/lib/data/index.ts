@@ -36,8 +36,3 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
   const { supabaseRecipe } = await import("./supabase");
   return supabaseRecipe(id);
 }
-
-/** Recipe ids to prerender. Only the static demo build knows them up front. */
-export function staticRecipeIds(): string[] {
-  return isDemo ? sampleRows().recipes.map((r) => r.id) : [];
-}

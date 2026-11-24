@@ -47,5 +47,3 @@ next-env.d.ts
 /playwright/.cache/
 !.env.example
 
-# GitHub Pages demo build (scripts/build-pages.mjs)
-/.pages-build/

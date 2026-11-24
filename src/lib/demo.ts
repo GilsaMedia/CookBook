@@ -1,6 +1,7 @@
 /**
- * Demo mode: a static build with the sample book and no sign-in, used for the
- * GitHub Pages preview (`npm run build:pages`). Never set in production.
+ * Demo mode: a static build with the sample book and no sign-in
+ * (`npm run build:demo`), for trying the screens without Supabase. Never set
+ * for the real site.
  */
 export const isDemo = process.env.NEXT_PUBLIC_DEMO === "1";
 
