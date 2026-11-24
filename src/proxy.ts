@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { isDemo } from "@/lib/demo";
 import { supabaseEnv } from "@/lib/supabase/env";
 
 const isPublic = (path: string) => path === "/login" || path.startsWith("/auth/");
@@ -10,6 +11,9 @@ const isPublic = (path: string) => path === "/login" || path.startsWith("/auth/"
  * visitors on /login. Authorization itself is enforced by RLS in the database.
  */
 export async function proxy(request: NextRequest) {
+  // The demo build has no accounts; everything is public sample data.
+  if (isDemo) return NextResponse.next({ request });
+
   let response = NextResponse.next({ request });
   const { url, key } = supabaseEnv();
 
