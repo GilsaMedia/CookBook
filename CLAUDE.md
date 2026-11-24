@@ -47,9 +47,14 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 
 ### AI
 
-- **AI calls are server-side only.** The API key never reaches the client.
+- **AI calls are server-side only.** No token or key ever reaches the client: never prefix them `NEXT_PUBLIC_`.
+- **Provider: the owner's Claude subscription through headless Claude Code**, the same setup as the owner's WhatBrendonThinks API. Run `claude setup-token` on the server, set `CLAUDE_CODE_OAUTH_TOKEN`, and the server runs `claude -p` with JSON output, no tools beyond what the task needs, no MCP servers and no saved session. Usage counts against the subscription's limits.
+  - Fallback: with no token, use the Anthropic API with `ANTHROPIC_API_KEY`. `AI_PROVIDER=claude-code|anthropic` overrides the choice.
+  - A subscription may only serve the owner's own use. Before other families can sign up (PLAN "Before opening sign-ups"), switch to `ANTHROPIC_API_KEY`.
+  - All AI goes through one module (`src/lib/ai/`, from Prompt 4) so the provider can change in one place.
+- **AI needs the Next.js server.** The GitHub Pages demo is static and has no AI; AI features run where `npm run start` runs (e.g. the owner's Mac behind Tailscale).
 - **Model names come from env vars** (e.g. `AI_MODEL_EXTRACT`, `AI_MODEL_FAST`). Never hard-code them.
-- Never log API keys or fetched page contents.
+- Never log tokens, API keys or fetched page contents.
 
 ### Scope
 
