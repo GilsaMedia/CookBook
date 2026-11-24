@@ -14,7 +14,7 @@ export default defineConfig({
   },
   projects: [{ name: "iphone", use: { ...devices["iPhone 15"], browserName: "chromium" } }],
   webServer: {
-    command: `npm run build && npx next start -p ${PORT}`,
+    command: `npm run build && node scripts/serve-static.mjs ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,

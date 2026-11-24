@@ -1,27 +1,64 @@
 "use client";
 
-import { useActionState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 import { he } from "@/i18n/he";
-import { loginAction, type LoginState } from "./actions";
+import { withBase } from "@/lib/demo";
+import { supabase } from "@/lib/supabase/client";
 
 const field =
   "block h-12 w-full rounded-xl border border-rule bg-white px-4 text-base text-ink outline-none focus:border-accent";
 const primary =
-  "h-12 w-full rounded-xl bg-accent text-base font-semibold text-white transition-transform active:scale-[0.97] disabled:opacity-60";
+  "press h-12 w-full rounded-xl bg-accent text-base font-semibold text-white disabled:opacity-60";
 
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Sign-in without a password: Supabase emails a 6-digit code and a magic
+ * link. Typing the code works on any device; the link only in this browser.
+ */
 export function LoginForm({ next, initialError }: { next: string; initialError?: string }) {
-  const [state, action, pending] = useActionState<LoginState, FormData>(loginAction, {
-    step: "email",
-    email: "",
-    error: initialError,
-  });
+  const router = useRouter();
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [error, setError] = useState(initialError);
+  const [pending, setPending] = useState(false);
+
+  async function sendCode(e: FormEvent) {
+    e.preventDefault();
+    const address = email.trim().toLowerCase();
+    if (!EMAIL.test(address)) return setError(he.auth.errors.invalidEmail);
+    setPending(true);
+    setError(undefined);
+    const callback = new URL(withBase("/auth/callback"), window.location.origin);
+    callback.searchParams.set("next", next);
+    const { error } = await supabase().auth.signInWithOtp({
+      email: address,
+      options: { shouldCreateUser: true, emailRedirectTo: callback.toString() },
+    });
+    setPending(false);
+    if (error) return setError(he.auth.errors.sendFailed);
+    setEmail(address);
+    setStep("code");
+  }
+
+  async function verify(e: FormEvent) {
+    e.preventDefault();
+    const token = code.replace(/\D/g, "");
+    if (token.length !== 6) return setError(he.auth.errors.badCode);
+    setPending(true);
+    setError(undefined);
+    const { error } = await supabase().auth.verifyOtp({ email, token, type: "email" });
+    setPending(false);
+    if (error) return setError(he.auth.errors.badCode);
+    router.replace(next);
+  }
 
   return (
-    <form action={action} className="flex flex-col gap-4">
-      <input type="hidden" name="next" value={next} />
-
-      {state.step === "email" ? (
-        <>
+    <div className="flex flex-col gap-4">
+      {step === "email" ? (
+        <form onSubmit={sendCode} className="flex flex-col gap-4">
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium">{he.auth.emailLabel}</span>
             <input
@@ -30,18 +67,18 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
               dir="ltr"
               required
               autoComplete="email"
-              defaultValue={state.email}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className={field}
             />
           </label>
-          <button name="intent" value="send" disabled={pending} className={primary}>
+          <button disabled={pending} className={primary}>
             {pending ? he.auth.sending : he.auth.sendCode}
           </button>
-        </>
+        </form>
       ) : (
-        <>
-          <p className="text-base">{he.auth.sentTo(state.email)}</p>
-          <input type="hidden" name="email" value={state.email} />
+        <form onSubmit={verify} className="flex flex-col gap-4">
+          <p className="text-base">{he.auth.sentTo(email)}</p>
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium">{he.auth.codeLabel}</span>
             <input
@@ -53,29 +90,34 @@ export function LoginForm({ next, initialError }: { next: string; initialError?:
               maxLength={6}
               required
               autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
               className={`${field} text-center text-2xl tracking-[0.5em]`}
             />
           </label>
-          <button name="intent" value="verify" disabled={pending} className={primary}>
+          <button disabled={pending} className={primary}>
             {pending ? he.auth.verifying : he.auth.verify}
           </button>
           <p className="text-sm text-muted">{he.auth.orLink}</p>
           <button
-            name="intent"
-            value="change-email"
-            formNoValidate
-            className="h-11 text-sm font-medium text-accent"
+            type="button"
+            onClick={() => {
+              setStep("email");
+              setCode("");
+              setError(undefined);
+            }}
+            className="press h-11 text-sm font-medium text-accent"
           >
             {he.auth.changeEmail}
           </button>
-        </>
+        </form>
       )}
 
-      {state.error ? (
+      {error ? (
         <p role="alert" className="text-sm font-medium text-red-700">
-          {state.error}
+          {error}
         </p>
       ) : null}
-    </form>
+    </div>
   );
 }

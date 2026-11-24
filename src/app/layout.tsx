@@ -1,6 +1,8 @@
 import { SerwistProvider } from "@serwist/turbopack/react";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AuthGate } from "@/components/auth/AuthGate";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { BottomNav } from "@/components/BottomNav";
 import { PressFeedback } from "@/components/PressFeedback";
 import { he } from "@/i18n/he";
@@ -27,16 +29,21 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="he" dir="rtl">
       <body className="min-h-dvh antialiased">
-        {/* The static demo has no service worker: Pages serves it fresh on every visit. */}
+        {/* No service worker for the sample-book demo build. */}
         <SerwistProvider
-          swUrl={withBase("/serwist/sw.js")}
+          // The root copy (scripts/postbuild-sw.mjs): a static host can't widen
+          // the scope of /serwist/sw.js with a header.
+          swUrl={withBase("/sw.js")}
+          options={{ scope: withBase("/") }}
           disable={process.env.NODE_ENV === "development" || isDemo}
         >
-          <PressFeedback />
-          <main className="mx-auto max-w-xl px-4 md:max-w-3xl lg:max-w-5xl pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
-            {children}
-          </main>
-          <BottomNav />
+          <AuthProvider>
+            <PressFeedback />
+            <main className="mx-auto max-w-xl px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] md:max-w-3xl lg:max-w-5xl">
+              <AuthGate>{children}</AuthGate>
+            </main>
+            <BottomNav />
+          </AuthProvider>
         </SerwistProvider>
       </body>
     </html>

@@ -6,6 +6,11 @@ export function safeNext(next: string | null | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
     return "/";
   }
-  if (next === "/login" || next.startsWith("/login?") || next.startsWith("/auth/")) return "/";
+  if (isPublicPath(next.split("?")[0])) return "/";
   return next;
+}
+
+/** Pages a signed-out visitor may open: sign-in and the magic-link landing. */
+export function isPublicPath(pathname: string): boolean {
+  return pathname === "/login" || pathname.startsWith("/auth/");
 }

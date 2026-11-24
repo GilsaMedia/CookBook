@@ -8,16 +8,16 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 
 ## Stack
 
-| Layer       | Choice                                                                                                                                                                     |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| App         | Next.js 16 (App Router, Turbopack) + TypeScript (strict), React 19                                                                                                         |
-| Styling     | Tailwind CSS 4, configured in `src/app/globals.css` (`@theme`), no `tailwind.config`                                                                                       |
-| PWA         | `src/app/manifest.ts` + Serwist (`@serwist/turbopack`); worker at `src/app/sw.ts`, served by `src/app/serwist/[path]/route.ts` as `/serwist/sw.js`; disabled in `next dev` |
-| Data/auth   | Supabase (Postgres, Auth, Storage, Realtime). Schema in `supabase/migrations/`, typed client in `src/lib/supabase/`, session refresh in `src/proxy.ts`                     |
-| Motion      | Motion (motion.dev). Not added yet                                                                                                                                         |
-| AI          | Anthropic API, server-side only                                                                                                                                            |
-| Tests       | Vitest (unit), Playwright (e2e, `e2e/`)                                                                                                                                    |
-| Lint/format | ESLint (`eslint-config-next`) + RTL class check, Prettier                                                                                                                  |
+| Layer       | Choice                                                                                                                                                                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App         | Next.js 16 (App Router, Turbopack) + TypeScript (strict), React 19                                                                                                                                                                        |
+| Styling     | Tailwind CSS 4, configured in `src/app/globals.css` (`@theme`), no `tailwind.config`                                                                                                                                                      |
+| PWA         | `src/app/manifest.ts` + Serwist (`@serwist/turbopack`); worker at `src/app/sw.ts`, served by `src/app/serwist/[path]/route.ts` as `/serwist/sw.js`; disabled in `next dev`                                                                |
+| Data/auth   | Supabase (Postgres, Auth, Storage, Realtime). Schema in `supabase/migrations/`, browser client in `src/lib/supabase/client.ts`. The app is a static export on GitHub Pages: sign-in and queries run in the browser, RLS protects the data |
+| Motion      | Motion (motion.dev). Not added yet                                                                                                                                                                                                        |
+| AI          | Anthropic API, server-side only                                                                                                                                                                                                           |
+| Tests       | Vitest (unit), Playwright (e2e, `e2e/`)                                                                                                                                                                                                   |
+| Lint/format | ESLint (`eslint-config-next`) + RTL class check, Prettier                                                                                                                                                                                 |
 
 ## Rules
 
@@ -71,12 +71,13 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 
 ```bash
 npm run dev           # dev server (service worker disabled)
-npm run build         # production build
-npm run start         # serve the production build
+npm run build         # static build into ./out (NEXT_PUBLIC_BASE_PATH=/CookBook for Pages)
+npm run build:demo    # static build with the sample book and no sign-in
+npm run start         # serve ./out like GitHub Pages does
 npm run lint          # ESLint + RTL class check
 npm run lint:rtl      # RTL class check only
 npm test              # Vitest unit tests (includes the RTL check over src/)
-npm run test:e2e      # Playwright e2e (builds and starts the app on :3100; needs local Supabase + .env.local)
+npm run test:e2e      # Playwright e2e (builds and serves ./out on :3100; needs local Supabase + .env.local)
 npm run db:start      # start local Supabase (Docker)
 npm run db:env        # write .env.local from the running local Supabase
 npm run db:reset      # re-apply all migrations to the local database

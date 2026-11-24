@@ -25,7 +25,7 @@ test("library → filter a category → recipe page with a safe source link", as
   await salads.click();
 
   await page.getByRole("link", { name: /סלט גזר מרוקאי/ }).click();
-  await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]+$/);
+  await expect(page).toHaveURL(/\/recipe\?id=[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("סלט גזר מרוקאי");
   const source = page.getByRole("link", { name: /מתכון לדוגמה/ });
   await expect(source).toHaveAttribute("target", "_blank");
