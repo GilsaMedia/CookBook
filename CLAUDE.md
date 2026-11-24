@@ -52,7 +52,14 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
   - Fallback: with no token, use the Anthropic API with `ANTHROPIC_API_KEY`. `AI_PROVIDER=claude-code|anthropic` overrides the choice.
   - A subscription may only serve the owner's own use. Before other families can sign up (PLAN "Before opening sign-ups"), switch to `ANTHROPIC_API_KEY`.
   - All AI goes through one module (`src/lib/ai/`, from Prompt 4) so the provider can change in one place.
-- **AI needs the Next.js server.** The GitHub Pages demo is static and has no AI; AI features run where `npm run start` runs (e.g. the owner's Mac behind Tailscale).
+- **AI runs on the owner's server, never on GitHub Pages.** Pages is public and static, so it holds no secrets. The token lives only in the server's untracked env file (e.g. on the owner's Mac behind Tailscale, like WhatBrendonThinks).
+- **Only approved family books may use the AI.** Sign-up is open to any family, and the owner's subscription must not become a free AI for strangers. Every AI request must pass all of these checks on the server, before any model call:
+  1. A valid Supabase session: verify the user's JWT on every request. Never trust a user id or book id sent by the client.
+  2. The user is a non-revoked `owner` or `contributor` of the book the request is for. Viewers can't call AI.
+  3. That book is AI-enabled. Only the server owner can turn this on, with the service role or SQL; it's never writable from the app or by RLS-authenticated users.
+  4. Per-user and per-book daily caps, plus size limits on input (URL fetch ≤ 2 MB, pasted text capped). Count usage in the database without storing prompts or page contents.
+  5. CORS allows only the app's own origins (the Pages site and localhost).
+- Refuse anything else with a friendly Hebrew message. Never fall back to calling the model without these checks, even in development builds.
 - **Model names come from env vars** (e.g. `AI_MODEL_EXTRACT`, `AI_MODEL_FAST`). Never hard-code them.
 - Never log tokens, API keys or fetched page contents.
 
