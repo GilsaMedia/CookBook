@@ -321,6 +321,12 @@ describe("signed-out visitors", () => {
     const { data } = await anon().storage.from("recipe-images").download(bobImage);
     expect(data).toBeNull();
   });
+
+  it("can call keepalive, which returns only the server time", async () => {
+    const { data, error } = await anon().rpc("keepalive");
+    expect(error).toBeNull();
+    expect(Number.isNaN(Date.parse(data as string))).toBe(false);
+  });
 });
 
 describe("roles inside a shared book", () => {
