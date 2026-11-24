@@ -1,15 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { adminClient, ownedBookId, seedSampleBook } from "../scripts/seed-sample-book.mjs";
+import { execFileSync } from "node:child_process";
 import { signIn } from "./helpers";
 
 /** Signs in a fresh user and fills their book with the 8 sample recipes. */
 async function signInWithSampleBook(page: Parameters<typeof signIn>[0]) {
   const email = await signIn(page);
-  const db = adminClient();
-  const { data } = await db.auth.admin.listUsers({ perPage: 1000 });
-  const user = data.users.find((u) => u.email === email);
-  if (!user) throw new Error(`user ${email} not found`);
-  await seedSampleBook(db, await ownedBookId(db, user.id));
+  // The seed script is plain ESM; run it rather than importing it into Playwright.
+  execFileSync("node", ["scripts/seed-sample-book.mjs", email], { stdio: "inherit" });
   await page.goto("/");
 }
 
