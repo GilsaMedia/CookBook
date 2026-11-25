@@ -101,9 +101,14 @@ export async function saveRecipe(book: CurrentBook, d: RecipeDraft): Promise<str
 }
 
 /** Copies the source page's photo into the book. Best effort: never blocks saving. */
-export async function importSourceImage(bookId: string, recipeId: string, url: string) {
+export async function importSourceImage(
+  bookId: string,
+  recipeId: string,
+  url: string,
+  credit?: { name: string; url: string } | null,
+) {
   const { error } = await supabase().functions.invoke("import-image", {
-    body: { bookId, recipeId, url },
+    body: { bookId, recipeId, url, credit: credit ?? undefined },
   });
   return !error;
 }

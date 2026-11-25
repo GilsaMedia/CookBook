@@ -30,6 +30,24 @@ const MIRROR: Record<string, string> = {
 };
 
 /**
+ * Joins pieces already in reading order. Some PDFs print every word as its
+ * own piece with no space character, only a gap: a gap wider than a sliver
+ * of the font size is a space.
+ */
+function joinPieces(items: PdfItem[], texts: string[], rtl: boolean): string {
+  let out = "";
+  items.forEach((item, n) => {
+    const prev = items[n - 1];
+    if (prev) {
+      const gap = rtl ? prev.x - (item.x + item.width) : item.x - (prev.x + prev.width);
+      if (gap > Math.max(item.size, prev.size) * 0.15) out += " ";
+    }
+    out += texts[n];
+  });
+  return out;
+}
+
+/**
  * A line's pieces in reading order. A Hebrew line starts at its right edge,
  * so the line is right to left when its rightmost piece with letters is Hebrew.
  */
@@ -38,26 +56,42 @@ function lineText(items: PdfItem[]): string {
   const words = items.filter((i) => /[A-Za-z\u0590-\u05FF]/.test(i.str));
   const rightmost = words.reduce<PdfItem | null>((r, i) => (!r || i.x > r.x ? i : r), null);
   if (rightmost?.dir !== "rtl") {
-    return [...items]
-      .sort((a, b) => a.x - b.x)
-      .map((i) => i.str)
-      .join("");
+    const ltr = [...items].sort((a, b) => a.x - b.x);
+    return joinPieces(
+      ltr,
+      ltr.map((i) => i.str),
+      false,
+    );
   }
-  return [...items]
-    .sort((a, b) => b.x - a.x)
-    .map((i) => {
-      if (i.dir === "rtl") return i.str;
-      // A bracket printed on its own is mirrored in right to left text.
-      if (i.str.length === 1 && MIRROR[i.str]) return MIRROR[i.str];
-      // ".Blender" is "Blender." printed: the sentence's final mark comes first.
-      const lead = i.str.match(/^[.,:;!?]+/)?.[0];
-      return lead ? i.str.slice(lead.length) + lead : i.str;
-    })
-    .join("");
+  const rtl = [...items].sort((a, b) => b.x - a.x);
+  const texts = rtl.map((i) => {
+    if (i.dir === "rtl") return i.str;
+    // A bracket printed on its own is mirrored in right to left text.
+    if (i.str.length === 1 && MIRROR[i.str]) return MIRROR[i.str];
+    // ".Blender" is "Blender." printed: the sentence's final mark comes first.
+    const lead = i.str.match(/^[.,:;!?]+/)?.[0];
+    return lead ? i.str.slice(lead.length) + lead : i.str;
+  });
+  return joinPieces(rtl, texts, true);
 }
 
-/** Groups a page's pieces into lines (top to bottom) and marks large text as headings. */
-export function linesFromItems(items: PdfItem[]): string[] {
+/** A link on the page: its address and the band of the page it covers. */
+export type PdfLink = { url: string; bottom: number; top: number };
+
+/** The page's web links, without buttons that only start a chat (WhatsApp). */
+export function pageLinks(annotations: { subtype?: string; url?: string; rect?: number[] }[]) {
+  return annotations
+    .filter((a) => a.subtype === "Link" && a.url && /^https?:\/\//.test(a.url) && a.rect)
+    .filter((a) => !/^https?:\/\/(wa\.me|api\.whatsapp\.com)\//.test(a.url!))
+    .map((a) => ({ url: a.url!, bottom: a.rect![1], top: a.rect![3] }));
+}
+
+/**
+ * Groups a page's pieces into lines (top to bottom) and marks large text as
+ * headings. A link is written after the line it's on, as "(address)", the
+ * way a Word document's links are, so a recipe's "מקור המתכון" keeps its page.
+ */
+export function linesFromItems(items: PdfItem[], links: PdfLink[] = []): string[] {
   const rows: PdfItem[][] = [];
   for (const item of [...items].filter((i) => i.str).sort((a, b) => b.y - a.y || a.x - b.x)) {
     const row = rows.at(-1);
@@ -74,7 +108,12 @@ export function linesFromItems(items: PdfItem[]): string[] {
       const text = lineText(row).replace(/\s+/g, " ").trim();
       const size = Math.max(...row.map((i) => i.size));
       const level = body && size > body * 1.6 ? 1 : body && size > body * 1.25 ? 2 : 0;
-      return text && level ? `${"#".repeat(level)} ${text}` : text;
+      const y = row[0].y;
+      const urls = [
+        ...new Set(links.filter((l) => y >= l.bottom - 2 && y <= l.top + 2).map((l) => l.url)),
+      ].filter((u) => !text.includes(u));
+      const line = [text, ...urls.map((u) => `(${u})`)].join(" ");
+      return text && level ? `${"#".repeat(level)} ${line}` : text ? line : "";
     })
     .filter(Boolean);
 }
@@ -88,7 +127,11 @@ export async function readPdfLines(bytes: Uint8Array): Promise<string[]> {
   const doc = await pdfjs.getDocument({ data: bytes }).promise;
   const lines: string[] = [];
   for (let n = 1; n <= doc.numPages; n++) {
-    const content = await (await doc.getPage(n)).getTextContent();
+    const page = await doc.getPage(n);
+    const [content, annotations] = await Promise.all([
+      page.getTextContent(),
+      page.getAnnotations(),
+    ]);
     const items: PdfItem[] = [];
     for (const it of content.items) {
       if (!("str" in it)) continue;
@@ -101,7 +144,7 @@ export async function readPdfLines(bytes: Uint8Array): Promise<string[]> {
         size: Math.hypot(it.transform[2], it.transform[3]),
       });
     }
-    lines.push(...linesFromItems(items));
+    lines.push(...linesFromItems(items, pageLinks(annotations)));
   }
   await doc.destroy();
   return lines;

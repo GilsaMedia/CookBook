@@ -33,7 +33,8 @@ export const he = {
   recipe: {
     back: "לספרייה",
     sourcePrefix: "מקור:",
-    photoCredit: (author: string, license: string) => `צילום: ${author} · ${license}`,
+    photoCredit: (author: string, license: string) =>
+      license ? `צילום: ${author} · ${license}` : `צילום: ${author}`,
     opensInNewTab: "(נפתח בלשונית חדשה)",
     addToMeal: "הוספה לארוחה +",
     cookMode: "מצב בישול",
@@ -144,6 +145,15 @@ export const he = {
     retryFailed: (n: number) => `לנסות שוב (${n})`,
     retrying: "שולחים שוב…",
     saveAsWritten: "לשמור אותם כמו שהם כתובים, בלי סידור",
+    photosTitle: "תמונות למתכונים",
+    photosMissing: (n: number) => `ל-${n} מתכונים בספר אין תמונה.`,
+    photosStart: "למצוא להם תמונות",
+    photosNote:
+      "Claude מחפש לכל מתכון תמונה: מהאתר של המתכון, או מאתר מתכונים עם אותה מנה. מתחת לתמונה כתוב מאיפה היא.",
+    photosProgressTitle: "מחפשים תמונות…",
+    photosProgressNote: "אפשר לסגור את הדף ולחזור; החיפוש ממשיך.",
+    photosDone: (found: number, missing: number) =>
+      `נמצאו תמונות ל-${found} מתכונים.${missing ? ` ל-${missing} לא מצאנו.` : ""}`,
     retryBanner: (n: number) => `בייבוא האחרון ${n} מתכונים לא נקראו.`,
     retryNow: "לנסות שוב עכשיו",
     noPhotos: (n: number) => `${n} מתכונים בלי תמונה. צלמי בבישול הבא 📸`,

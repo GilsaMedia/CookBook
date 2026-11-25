@@ -19,6 +19,7 @@ const failed = (over: Partial<ImportResult>): ImportResult => ({
   input: "Title: עוגת שמרים\n- 1 ק״ג קמח\n\n  לשים בצק רך  \nאופים 40 דקות",
   recipe: null,
   source: null,
+  photo: null,
   ...over,
 });
 

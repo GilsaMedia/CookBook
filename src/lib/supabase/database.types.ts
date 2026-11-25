@@ -498,6 +498,8 @@ export type Database = {
         Row: {
           book_id: string;
           created_at: string;
+          credit_name: string | null;
+          credit_url: string | null;
           id: string;
           position: number;
           recipe_id: string;
@@ -506,6 +508,8 @@ export type Database = {
         Insert: {
           book_id: string;
           created_at?: string;
+          credit_name?: string | null;
+          credit_url?: string | null;
           id?: string;
           position?: number;
           recipe_id: string;
@@ -514,6 +518,8 @@ export type Database = {
         Update: {
           book_id?: string;
           created_at?: string;
+          credit_name?: string | null;
+          credit_url?: string | null;
           id?: string;
           position?: number;
           recipe_id?: string;

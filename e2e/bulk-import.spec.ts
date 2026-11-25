@@ -59,7 +59,7 @@ async function actAsWorker(expected: number) {
         });
       } else {
         const ingredients = title.startsWith("מוסקה")
-          ? ["חציל", "בשר טחון", "עגבנייה"]
+          ? ["חציל", "בשר טחון", "עגבנייה", "בצל"] // the same recipe twice in the file
           : ["עדשים כתומות", "בצל", "גזר"];
         await admin.rpc("finish_import_item", {
           p_id: item.id,
@@ -234,4 +234,47 @@ test("a PDF without text explains itself", async ({ page }) => {
   await expect(
     page.getByRole("alert").filter({ hasText: "לא הצלחנו לקרוא את הקובץ" }),
   ).toBeVisible();
+});
+
+test("recipes without a photo: find photos runs in the background and needs no review", async ({
+  page,
+}) => {
+  const email = await signIn(page);
+  const { data: users } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const userId = users.users.find((u) => u.email === email)!.id;
+  const { data: m } = await admin
+    .from("book_members")
+    .select("book_id")
+    .eq("user_id", userId)
+    .single();
+  await admin.from("ai_access").insert({ book_id: m!.book_id });
+  await admin.from("recipes").insert([
+    { book_id: m!.book_id, title: "עוגת תפוזים", status: "approved" },
+    { book_id: m!.book_id, title: "מרק אפונה", status: "approved" },
+  ]);
+
+  await page.goto("/import");
+  await expect(page.getByText("ל-2 מתכונים בספר אין תמונה.")).toBeVisible();
+  await page.getByRole("button", { name: "למצוא להם תמונות" }).click();
+  await expect(page.getByRole("heading", { name: "מחפשים תמונות…" })).toBeVisible();
+
+  // Play the worker: one photo found, one not.
+  let handled = 0;
+  for (let tries = 0; handled < 2 && tries < 40; tries++) {
+    const { data } = await admin.rpc("claim_import_items", { p_limit: 10 });
+    const items = (data ?? []) as { id: string; task: string }[];
+    for (const item of items.filter((i) => i.task === "find_photo")) {
+      await admin.rpc("finish_import_item", {
+        p_id: item.id,
+        p_status: handled === 0 ? "done" : "failed",
+        p_result: null,
+        p_error: handled === 0 ? "" : "no_photo",
+      });
+      handled++;
+    }
+    if (handled < 2) await new Promise((r) => setTimeout(r, 500));
+  }
+  await expect(page.getByText("נמצאו תמונות ל-1 מתכונים. ל-1 לא מצאנו.")).toBeVisible({
+    timeout: 20_000,
+  });
 });

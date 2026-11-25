@@ -292,3 +292,110 @@ describe("finishing every recipe", () => {
     ]);
   });
 });
+
+describe("finding photos", () => {
+  // A book of its own: the others used up today's imports.
+  let cook: TestUser;
+  // Earlier tests leave other jobs' items queued or claimed: set them aside.
+  const onlyThisJob = async (jobId: string) => {
+    await admin()
+      .from("import_jobs")
+      .update({ status: "cancelled" })
+      .neq("id", jobId)
+      .in("status", ["queued", "running"]);
+    await admin().from("import_items").update({ status: "failed" }).eq("status", "processing");
+  };
+  beforeAll(async () => {
+    cook = await createUser("imp-photos");
+    await admin().from("ai_access").insert({ book_id: cook.bookId });
+  });
+
+  it("hands a recipe to its next step without using an attempt", async () => {
+    const { data: job } = await newJob(cook);
+    await cook.client.from("import_items").insert(item(job!.id, cook.bookId, 0));
+    await cook.client.from("import_jobs").update({ status: "queued" }).eq("id", job!.id);
+    await onlyThisJob(job!.id);
+    const { data: claimed } = await admin().rpc("claim_import_items", { p_limit: 2 });
+    const mine = claimed!.find((c) => c.job_id === job!.id)!;
+
+    await admin().rpc("finish_import_item", {
+      p_id: mine.id,
+      p_status: "queued",
+      p_result: { stage: "photo", recipe: { title: "א" } },
+      p_error: "next",
+    });
+    const { data: row } = await admin()
+      .from("import_items")
+      .select("status, attempts, retry_at, result")
+      .eq("id", mine.id)
+      .single();
+    expect(row).toMatchObject({
+      status: "queued",
+      attempts: 0,
+      retry_at: null,
+      result: { stage: "photo" },
+    });
+    // Ready at once for the next step.
+    const { data: next } = await admin().rpc("claim_import_items", { p_limit: 2 });
+    expect(next!.map((i) => i.id)).toContain(mine.id);
+  });
+
+  it("finishes a photos job as imported: there's nothing to review", async () => {
+    const { data: job } = await cook.client
+      .from("import_jobs")
+      .insert({
+        book_id: cook.bookId,
+        format: "photos",
+        file_name: "photos",
+        created_by: cook.id,
+      })
+      .select("id")
+      .single();
+    const { error: addError } = await cook.client.from("import_items").insert({
+      job_id: job!.id,
+      book_id: cook.bookId,
+      position: 0,
+      entry: { recipeId: "x" },
+      task: "find_photo",
+      input: '{"recipe_id":"x"}',
+    });
+    expect(addError).toBeNull();
+    await cook.client.from("import_jobs").update({ status: "queued" }).eq("id", job!.id);
+    await onlyThisJob(job!.id);
+    const { data: claimed } = await admin().rpc("claim_import_items", { p_limit: 2 });
+    const mine = claimed!.find((c) => c.job_id === job!.id)!;
+    await admin().rpc("finish_import_item", {
+      p_id: mine.id,
+      p_status: "done",
+      p_result: null,
+      p_error: "",
+    });
+    const { data: state } = await admin()
+      .from("import_jobs")
+      .select("status, done")
+      .eq("id", job!.id)
+      .single();
+    expect(state).toEqual({ status: "imported", done: 1 });
+  });
+
+  it("only takes web links as a photo's credit", async () => {
+    const { data: recipe } = await cook.client
+      .from("recipes")
+      .insert({ book_id: cook.bookId, title: "עם תמונה", status: "approved" })
+      .select("id")
+      .single();
+    const row = (credit_url: string) => ({
+      recipe_id: recipe!.id,
+      book_id: cook.bookId,
+      storage_path: `${cook.bookId}/${recipe!.id}/x.jpg`,
+      credit_name: "אתר",
+      credit_url,
+    });
+    expect(
+      (await cook.client.from("recipe_images").insert(row("javascript:alert(1)"))).error,
+    ).not.toBeNull();
+    expect(
+      (await cook.client.from("recipe_images").insert(row("https://example.com/r"))).error,
+    ).toBeNull();
+  });
+});

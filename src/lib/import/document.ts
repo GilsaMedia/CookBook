@@ -88,8 +88,9 @@ export type Found = {
   source_url: string | null;
 };
 
-// Navigation lines Efrat's Doc adds under every recipe (PRD §7.3).
-const NAVIGATION = /לתוכן העניינים|הוספה לארוחה|back to (the )?(top|contents)/i;
+// Navigation lines Efrat's Doc adds under every recipe (PRD §7.3). Spaces
+// are optional: some PDFs lose them.
+export const NAVIGATION = /לתוכן\s*העניינים|הוספה\s*לארוחה|back to (the )?(top|contents)/i;
 const LINK = /https?:\/\/[^\s)]+/;
 // No \b: it doesn't work after Hebrew letters.
 const SOURCE_LINE = /^\s*-?\s*(מקור( המתכון)?|source)(?=[\s:(]|$)/i;
