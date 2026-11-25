@@ -142,13 +142,84 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
   await expect(page.getByRole("button", { name: "שמירת 0 מתכונים" })).toBeDisabled();
 });
 
-test("a PDF asks for the Word export", async ({ page }) => {
+test("a Hebrew PDF is read in the browser and Claude's recipe list builds the mapping", async ({
+  page,
+  browser,
+}) => {
+  // Print a small Hebrew cookbook to PDF (as Google Docs would export it).
+  const printer = await browser.newPage();
+  await printer.setContent(`<html dir="rtl" lang="he"><body style="font-family: Arial">
+    <h1>מרקים</h1><h2>מרק עדשים</h2><ul><li>2 כוסות עדשים כתומות (480 מ"ל)</li></ul>
+    <p>מבשלים 30 דקות.</p><h2>מרק כתום</h2><p>דלעת, בטטה וגזר. מבשלים 40 דקות.</p></body></html>`);
+  const pdf = await printer.pdf();
+  await printer.close();
+
   await signIn(page);
+  // Stand in for Claude: find the titles in the numbered lines the app sends.
+  let sentLines = "";
+  await page.route("**/functions/v1/ai", async (route) => {
+    const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*" };
+    if (route.request().method() === "OPTIONS")
+      return route.fulfill({ status: 204, headers: cors });
+    const { input } = route.request().postDataJSON() as { input: string };
+    sentLines = input;
+    const lineOf = (title: string) =>
+      Number(
+        input
+          .split("\n")
+          .find((l) => l.endsWith(title))!
+          .split("|")[0],
+      );
+    const soup = lineOf("מרק עדשים");
+    const orange = lineOf("מרק כתום");
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: cors,
+      body: JSON.stringify({
+        result: {
+          recipes: [
+            {
+              title: "מרק עדשים",
+              category: "מרקים",
+              start: soup,
+              end: orange - 1,
+              source_url: null,
+            },
+            {
+              title: "מרק כתום",
+              category: "מרקים",
+              start: orange,
+              end: orange + 1,
+              source_url: null,
+            },
+          ],
+        },
+      }),
+    });
+  });
+
   await page.goto("/import");
   await page.locator('input[type="file"]').setInputFiles({
     name: "cookbook.pdf",
     mimeType: "application/pdf",
-    buffer: Buffer.from("%PDF-1.4"),
+    buffer: Buffer.from(pdf),
   });
-  await expect(page.getByRole("alert").filter({ hasText: "קובץ PDF עוד לא נתמך" })).toBeVisible();
+  await expect(page.getByText("נמצאו 2 מתכונים.")).toBeVisible({ timeout: 20_000 });
+  // Hebrew lines arrive in reading order, numbers included.
+  expect(sentLines).toContain('2 כוסות עדשים כתומות (480 מ"ל)');
+  expect(sentLines).toContain("# מרקים");
+});
+
+test("a PDF without text explains itself", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/import");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "broken.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 not really"),
+  });
+  await expect(
+    page.getByRole("alert").filter({ hasText: "לא הצלחנו לקרוא את הקובץ" }),
+  ).toBeVisible();
 });

@@ -142,7 +142,14 @@ export async function pickDocument(
   return new Promise((resolve) => {
     const view = new picker.DocsView(picker.ViewId.DOCS)
       .setMimeTypes(
-        [DOC_TYPES.googleDoc, DOC_TYPES.docx, "text/plain", "text/markdown", "text/html"].join(","),
+        [
+          DOC_TYPES.googleDoc,
+          DOC_TYPES.docx,
+          "application/pdf",
+          "text/plain",
+          "text/markdown",
+          "text/html",
+        ].join(","),
       )
       .setIncludeFolders(false)
       .setMode(picker.DocsViewMode.LIST);

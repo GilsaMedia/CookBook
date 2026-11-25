@@ -17,6 +17,7 @@ import {
   pickDocument,
 } from "@/lib/import/google-drive";
 import { ParseError } from "@/lib/import/parse";
+import { readPdfLines } from "@/lib/import/pdf";
 import type { ImportEntry, ParsedCollection } from "@/lib/import/types";
 
 type Doc = { name: string; lines: string[]; headingEntries: ImportEntry[] };
@@ -24,7 +25,16 @@ type Doc = { name: string; lines: string[]; headingEntries: ImportEntry[] };
 /** A document as lines (and, for Word, the heading-based split as a fallback). */
 async function readDocument(name: string, mimeType: string, bytes: Uint8Array): Promise<Doc> {
   const lower = name.toLowerCase();
-  if (lower.endsWith(".pdf") || mimeType === "application/pdf") throw new ParseError("pdf");
+  if (lower.endsWith(".pdf") || mimeType === "application/pdf") {
+    let lines: string[];
+    try {
+      lines = await readPdfLines(bytes);
+    } catch {
+      throw new ParseError("unreadable");
+    }
+    if (!lines.length) throw new ParseError("pdf_empty");
+    return { name, lines, headingEntries: [] };
+  }
   if (lower.endsWith(".docx") || mimeType === DOC_TYPES.docx) {
     const paragraphs = await readDocx(bytes).catch(() => {
       throw new ParseError("unreadable");
@@ -145,14 +155,14 @@ export function DocsImport({
         </>
       )}
       <label
-        className={`press flex h-12 cursor-pointer items-center justify-center rounded-full text-base font-semibold ${
+        className={`press flex min-h-12 cursor-pointer items-center justify-center rounded-full px-4 py-2 text-center text-base font-semibold ${
           driveImportReady ? "bg-white ring-1 ring-rule" : "bg-accent text-white"
         } ${busy ? "pointer-events-none opacity-60" : ""}`}
       >
         {driveImportReady ? he.bulk.docsUploadInstead : he.bulk.chooseDocx}
         <input
           type="file"
-          accept=".docx,.txt,.md,.html,.htm,.pdf,text/plain,text/markdown,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept=".docx,.pdf,.txt,.md,.html,.htm,application/pdf,text/plain,text/markdown,text/html,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
           className="sr-only"
           disabled={busy}
           onChange={(e) => e.target.files?.[0] && fromFile(e.target.files[0])}

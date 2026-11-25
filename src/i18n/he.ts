@@ -91,18 +91,21 @@ export const he = {
       failed: "משהו השתבש מול Google. אפשר לנסות שוב.",
     } as Record<string, string>,
     docsDrive: "בחירת המסמך מ-Google Drive",
-    docsDriveHint: "בוחרים את מסמך המתכונים (Google Docs או Word) ישר מ-Drive, בלי להוריד כלום.",
-    docsUploadInstead: "או העלאת קובץ מהמכשיר (Word, טקסט או HTML)",
+    docsDriveHint:
+      "בוחרים את מסמך המתכונים (Google Docs, Word או PDF) ישר מ-Drive, בלי להוריד כלום.",
+    docsUploadInstead: "העלאת קובץ מהמכשיר",
     docsReading: "קוראים את המסמך…",
     docsSplitting: (done: number, total: number) =>
       total > 1
         ? `Claude מחפש את המתכונים במסמך… חלק ${Math.min(done + 1, total)} מתוך ${total}`
         : "Claude מחפש את המתכונים במסמך… זה לוקח כדקה.",
-    docsNote: "המסמך יכול להיות בכל מבנה: Claude מוצא בו את המתכונים ואת הקטגוריות.",
+    docsNote:
+      "Google Docs, Word, PDF או טקסט, בכל מבנה: Claude מוצא במסמך את המתכונים ואת הקטגוריות.",
     chooseDocx: "בחירת קובץ Word",
     reading: "קוראים את הקובץ…",
     errors: {
-      pdf: "קובץ PDF עוד לא נתמך. אפשר לבחור את המסמך מ-Google Drive, או להעלות אותו כ-Word (.docx).",
+      pdf_empty:
+        "ב-PDF הזה אין טקסט לקריאה (כנראה הוא סרוק כתמונה). אפשר לבחור את המסמך המקורי מ-Google Drive.",
       no_recipes: "Claude לא מצא מתכונים במסמך הזה.",
       unreadable:
         "לא הצלחנו לקרוא את הקובץ. אפשר לבחור את המסמך מ-Google Drive או להעלות קובץ Word.",
