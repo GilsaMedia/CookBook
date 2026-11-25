@@ -95,6 +95,9 @@ begin
   if v_book is null then
     raise exception 'not_found' using errcode = 'P0001';
   end if;
+  if not private.can_plan(v_book) then
+    raise exception 'not_allowed' using errcode = 'P0001';
+  end if;
   select m.id into v_meal from public.meals m where m.book_id = v_book and m.status = 'draft';
   if v_meal is null then
     insert into public.meals (book_id) values (v_book)

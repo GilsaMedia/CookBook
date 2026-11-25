@@ -95,7 +95,9 @@ describe("the tray", () => {
       (await viewer.client.from("meal_items").select("id").eq("meal_id", tray!.id)).data,
     ).toHaveLength(2);
     expect((await stranger.client.from("meals").select("id").eq("id", tray!.id)).data).toEqual([]);
-    expect((await viewer.client.rpc("add_to_tray", { p_recipe: soup })).error).not.toBeNull();
+    expect((await viewer.client.rpc("add_to_tray", { p_recipe: soup })).error?.message).toContain(
+      "not_allowed",
+    );
     await viewer.client.from("meals").update({ title: "לא" }).eq("id", tray!.id);
     expect(
       (await admin().from("meals").select("title").eq("id", tray!.id).single()).data!.title,
