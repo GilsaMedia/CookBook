@@ -1,5 +1,7 @@
+import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Local Supabase captures outgoing email in Mailpit.
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
@@ -41,10 +43,42 @@ export async function fillSignIn(page: Page, email: string, password = PASSWORD)
   await page.getByRole("button", { name: "כניסה", exact: true }).click();
 }
 
-/** A new account, signed in through the real UI. */
+let adminClient: SupabaseClient | null = null;
+
+/** Service-role client for the local Supabase: arranges what an admin would. */
+export function admin(): SupabaseClient {
+  if (!adminClient) {
+    const out = execFileSync("npx", ["supabase", "status", "-o", "json"], { encoding: "utf8" });
+    const status = JSON.parse(out.slice(out.indexOf("{")));
+    adminClient = createClient(status.API_URL, status.SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return adminClient;
+}
+
+export async function userId(email: string): Promise<string> {
+  const { data } = await admin().auth.admin.listUsers({ perPage: 1000 });
+  return data.users.find((u) => u.email === email)!.id;
+}
+
+/** Approves a new account, as the app's admin would on /requests. */
+export async function approve(email: string) {
+  const { error } = await admin()
+    .from("profiles")
+    .update({ approved_at: new Date().toISOString() })
+    .eq("id", await userId(email));
+  if (error) throw error;
+}
+
+/** A new account, signed in through the real UI and approved. */
 export async function signIn(page: Page, email = uniqueEmail()) {
   await page.goto("/login");
   await signUp(page, email);
+  await expect(page.getByRole("heading", { name: "הבקשה שלך מחכה לאישור" })).toBeVisible();
+  await approve(email);
+  await page.getByRole("button", { name: "לבדוק שוב" }).click();
+  await expect(page.getByRole("navigation", { name: "ניווט ראשי" })).toBeVisible();
   await expect(page).toHaveURL(/\/$/);
   return email;
 }

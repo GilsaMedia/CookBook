@@ -98,6 +98,29 @@ export type Database = {
           },
         ];
       };
+      app_admins: {
+        Row: {
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "app_admins_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       book_members: {
         Row: {
           book_id: string;
@@ -475,24 +498,41 @@ export type Database = {
       };
       profiles: {
         Row: {
+          approved_at: string | null;
+          approved_by: string | null;
           created_at: string;
           display_name: string | null;
           email: string | null;
           id: string;
+          rejected_at: string | null;
         };
         Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           created_at?: string;
           display_name?: string | null;
           email?: string | null;
           id: string;
+          rejected_at?: string | null;
         };
         Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           created_at?: string;
           display_name?: string | null;
           email?: string | null;
           id?: string;
+          rejected_at?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_approved_by_fkey";
+            columns: ["approved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       recipe_images: {
         Row: {
@@ -651,7 +691,22 @@ export type Database = {
           share_id?: string;
           to_recipe_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "share_copies_share_id_fkey";
+            columns: ["share_id"];
+            isOneToOne: false;
+            referencedRelation: "shares";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "share_copies_to_recipe_id_fkey";
+            columns: ["to_recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       shares: {
         Row: {
@@ -690,7 +745,22 @@ export type Database = {
           status?: Database["public"]["Enums"]["share_status"];
           to_email?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "shares_from_book_id_fkey";
+            columns: ["from_book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shares_from_user_fkey";
+            columns: ["from_user"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       steps: {
         Row: {
@@ -736,6 +806,16 @@ export type Database = {
         Args: { p_recipe_ids?: string[]; p_share: string };
         Returns: number;
       };
+      access_requests: {
+        Args: never;
+        Returns: {
+          display_name: string;
+          email: string;
+          requested_at: string;
+          status: string;
+          user_id: string;
+        }[];
+      };
       ai_take_quota: {
         Args: { p_book: string; p_user: string };
         Returns: string;
@@ -764,6 +844,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      decide_access: {
+        Args: { p_approve: boolean; p_user: string };
+        Returns: undefined;
+      };
       finish_import_item: {
         Args: {
           p_error: string;
@@ -774,16 +858,23 @@ export type Database = {
         Returns: undefined;
       };
       keepalive: { Args: never; Returns: string };
+      my_access: {
+        Args: never;
+        Returns: {
+          is_admin: boolean;
+          status: string;
+        }[];
+      };
       normalize_hebrew: { Args: { input: string }; Returns: string };
       retry_import: { Args: { p_job: string }; Returns: number };
       share_photos: {
         Args: { p_share: string };
         Returns: {
-          credit_name: string | null;
-          credit_url: string | null;
+          credit_name: string;
+          credit_url: string;
           from_recipe_id: string;
-          position: number | null;
-          storage_path: string | null;
+          position: number;
+          storage_path: string;
           to_book_id: string;
           to_recipe_id: string;
         }[];
@@ -794,7 +885,11 @@ export type Database = {
       };
       share_preview: {
         Args: { p_share: string };
-        Returns: { category: string | null; recipe_id: string; title: string }[];
+        Returns: {
+          category: string;
+          recipe_id: string;
+          title: string;
+        }[];
       };
     };
     Enums: {

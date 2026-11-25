@@ -453,9 +453,11 @@ site_url = "https://gilsamedia.github.io/CookBook"
 # (Local tests use 1s so they can resend quickly.)
 [remotes.production.auth.email]
 max_frequency = "1m0s"
-# Hosted sign-ups verify the email once, with a link. (Local sign-ups skip
-# it so tests sign in at once.)
-enable_confirmations = true
+# No email link at sign-up: the app's admin approves every new account
+# instead (/requests, migration 20261125210000_access_requests.sql), and the
+# free plan's email only reaches the Supabase team anyway. Emails are still
+# used to reset a forgotten password.
+enable_confirmations = false
 
 # Vector buckets are a local default the app doesn't use.
 [remotes.production.storage.vector]

@@ -17,8 +17,12 @@ export const anon = (): Client => createClient<Database>(env().url, env().anonKe
 
 const created: string[] = [];
 
-/** Creates a confirmed user (the signup trigger gives them a book) and signs them in. */
-export async function createUser(label: string): Promise<TestUser> {
+/**
+ * Creates a confirmed user (the signup trigger gives them a book), approves
+ * it (new accounts wait for an admin; pass approved: false to keep it
+ * waiting) and signs them in.
+ */
+export async function createUser(label: string, { approved = true } = {}): Promise<TestUser> {
   const email = `${label}-${randomUUID().slice(0, 8)}@test.local`;
   const password = `pw-${randomUUID()}`;
   const { data, error } = await admin().auth.admin.createUser({
@@ -28,6 +32,13 @@ export async function createUser(label: string): Promise<TestUser> {
   });
   if (error) throw error;
   created.push(data.user.id);
+  if (approved) {
+    const { error: aErr } = await admin()
+      .from("profiles")
+      .update({ approved_at: new Date().toISOString() })
+      .eq("id", data.user.id);
+    if (aErr) throw aErr;
+  }
 
   const client = createClient<Database>(env().url, env().anonKey, options);
   const signIn = await client.auth.signInWithPassword({ email, password });
