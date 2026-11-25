@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AddToMealButton } from "@/components/meals/AddToMealButton";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
 import { WarningChip } from "@/components/recipe/WarningChip";
 import { he } from "@/i18n/he";
@@ -107,14 +108,9 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
         </Link>
       )}
 
-      {/* Wired in later prompts: meal tray (6) and cook mode (8). */}
+      {/* Cook mode is wired in prompt 8. */}
       <div className="flex gap-3">
-        <button
-          type="button"
-          className="press h-12 flex-1 rounded-full bg-accent px-5 text-base font-semibold text-white"
-        >
-          {he.recipe.addToMeal}
-        </button>
+        <AddToMealButton recipeId={recipe.id} />
         <button
           type="button"
           className="press h-12 flex-1 rounded-full bg-white px-5 text-base font-semibold ring-1 ring-rule"

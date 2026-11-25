@@ -4,10 +4,18 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { he } from "@/i18n/he";
 import { cardMeta } from "@/lib/recipes/format";
-import type { Library } from "@/lib/recipes/types";
+import type { Library, RecipeCard } from "@/lib/recipes/types";
 import { searchItems } from "@/lib/search/hebrew";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
 import { WarningChip } from "@/components/recipe/WarningChip";
+import { useTray } from "@/components/meals/TrayProvider";
+
+/** Choosing a recipe for a meal instead of opening it ("החלפה", "הוספת מנה"). */
+export type PickMode = {
+  label: string;
+  onPick: (recipe: RecipeCard) => void;
+  onCancel: () => void;
+};
 
 /** Results follow the keyboard within this many ms (PRD §5.1 asks for ≤150). */
 const SEARCH_DEBOUNCE_MS = 100;
@@ -21,7 +29,9 @@ const chipClass = (active: boolean) =>
  * Library (screen 1): search on top, category chips, card grid.
  * Filtering runs in the browser over the whole book, so it's instant.
  */
-export function LibraryView({ library }: { library: Library }) {
+export function LibraryView({ library, pick }: { library: Library; pick?: PickMode }) {
+  const tray = useTray();
+  const [added, setAdded] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -63,6 +73,16 @@ export function LibraryView({ library }: { library: Library }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {pick && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-ink px-4 py-3 text-paper">
+          <span className="font-semibold">
+            {he.meals.pickTitle} · {pick.label}
+          </span>
+          <button type="button" onClick={pick.onCancel} className="press h-11 px-2 font-semibold">
+            {he.meals.pickCancel}
+          </button>
+        </div>
+      )}
       <div role="search">
         <label className="relative block">
           <span className="sr-only">{he.library.searchLabel}</span>
@@ -147,26 +167,66 @@ export function LibraryView({ library }: { library: Library }) {
       ) : (
         <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
           {results.map((r) => (
-            <li key={r.id} className="min-w-0">
-              <Link
-                href={`/recipe?id=${r.id}`}
-                className="press flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule"
-              >
-                <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />
-                <div className="flex flex-1 flex-col gap-1 p-3">
-                  <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
-                  <p className="text-sm text-muted">{cardMeta(r.categoryName, r.totalMinutes)}</p>
-                  {r.tags.map((t) => (
-                    <span
-                      key={t}
-                      className="w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent"
-                    >
-                      {t}
-                    </span>
-                  ))}
-                  <WarningChip names={r.warnings} />
-                </div>
-              </Link>
+            <li key={r.id} className="relative min-w-0">
+              {pick ? (
+                <button
+                  type="button"
+                  onClick={() => pick.onPick(r)}
+                  className="press flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white text-start shadow-sm ring-1 ring-rule"
+                >
+                  <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />
+                  <div className="flex flex-1 flex-col gap-1 p-3">
+                    <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
+                    <p className="text-sm text-muted">{cardMeta(r.categoryName, r.totalMinutes)}</p>
+                    {r.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                    <WarningChip names={r.warnings} />
+                  </div>
+                </button>
+              ) : (
+                <Link
+                  href={`/recipe?id=${r.id}`}
+                  className="press flex h-full flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-rule"
+                >
+                  <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />
+                  <div className="flex flex-1 flex-col gap-1 p-3">
+                    <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
+                    <p className="text-sm text-muted">{cardMeta(r.categoryName, r.totalMinutes)}</p>
+                    {r.tags.map((t) => (
+                      <span
+                        key={t}
+                        className="w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                    <WarningChip names={r.warnings} />
+                  </div>
+                </Link>
+              )}
+              {!pick && tray.canPlan && (
+                <button
+                  type="button"
+                  aria-label={he.meals.addCard(r.title)}
+                  onClick={async () => {
+                    try {
+                      await tray.add(r.id);
+                      setAdded(r.id);
+                    } catch {
+                      setAdded(null);
+                    }
+                  }}
+                  className="press absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-white/90 text-xl font-bold text-accent shadow-sm ring-1 ring-rule"
+                >
+                  {added === r.id ? "✓" : "+"}
+                </button>
+              )}
             </li>
           ))}
         </ul>
