@@ -704,8 +704,8 @@ export type Database = {
         Returns: undefined;
       };
       keepalive: { Args: never; Returns: string };
-      retry_import: { Args: { p_job: string }; Returns: number };
       normalize_hebrew: { Args: { input: string }; Returns: string };
+      retry_import: { Args: { p_job: string }; Returns: number };
     };
     Enums: {
       dish_role: "main" | "side" | "salad" | "soup" | "dessert" | "pastry" | "spread" | "drink";
