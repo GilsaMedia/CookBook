@@ -50,6 +50,29 @@ describe("extractRecipePage", () => {
     expect(page.image).toBeNull();
   });
 
+  it("reads a TikTok video's caption, creator and cover", () => {
+    const page = extractRecipePage(
+      fixture("tiktok-video.html"),
+      "https://www.tiktok.com/@samplecook/video/7000000000000000000",
+    );
+    expect(page.fromCaption).toBe(true);
+    expect(page.siteName).toBe("Sample Cook · TikTok");
+    expect(page.image).toBe("https://p16.example-cdn.com/cover.jpeg");
+    expect(page.text).toContain("Video caption:");
+    expect(page.text).toContain("2 cups buttermilk");
+    expect(page.text).not.toContain("boot");
+    // A short caption is still worth importing.
+    expect(tooLittleText(page)).toBe(false);
+  });
+
+  it("uses a short page's description", () => {
+    const page = extractRecipePage(
+      '<html><head><title>Post</title><meta property="og:description" content="Easy hummus: 1 can chickpeas, 3 tbsp tahini, lemon, garlic. Blend until smooth."></head><body></body></html>',
+      "https://social.example.com/p/1",
+    );
+    expect(page.text).toContain("Description: Easy hummus");
+  });
+
   it("treats an empty JavaScript shell as too little to import", () => {
     const page = extractRecipePage(
       "<html><head><title>App</title></head><body><div id=root></div></body></html>",

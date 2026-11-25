@@ -13,6 +13,8 @@ export type PageExtract = {
   text: string;
   /** True when the text came from schema.org Recipe data. */
   fromJsonLd: boolean;
+  /** True when the text is a social video's caption (e.g. TikTok). */
+  fromCaption: boolean;
   siteName: string | null;
   image: string | null;
 };
@@ -189,6 +191,39 @@ function recipeText(r: Node): string {
   return lines.join("\n");
 }
 
+/**
+ * A TikTok video's caption, creator and cover. TikTok pages are rendered by
+ * JavaScript; the caption (where creators write the recipe) is in the
+ * embedded __UNIVERSAL_DATA_FOR_REHYDRATION__ JSON.
+ */
+function tiktokVideo(
+  html: string,
+): { caption: string; author: string | null; cover: string | null } | null {
+  const raw = html.match(
+    /<script\b[^>]*id\s*=\s*["']__UNIVERSAL_DATA_FOR_REHYDRATION__["'][^>]*>([\s\S]*?)<\/script>/i,
+  )?.[1];
+  if (!raw) return null;
+  let data: Json;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  const get = (v: Json | undefined, ...keys: string[]): Json | undefined =>
+    keys.reduce<Json | undefined>(
+      (acc, k) => (acc && typeof acc === "object" && !Array.isArray(acc) ? acc[k] : undefined),
+      v,
+    );
+  const item = get(data, "__DEFAULT_SCOPE__", "webapp.video-detail", "itemInfo", "itemStruct");
+  const caption = typeof get(item, "desc") === "string" ? (get(item, "desc") as string).trim() : "";
+  if (!caption) return null;
+  return {
+    caption,
+    author: str(get(item, "author", "nickname")) ?? str(get(item, "author", "uniqueId")),
+    cover: str(get(item, "video", "cover")) ?? str(get(item, "video", "originCover")),
+  };
+}
+
 /** The page's readable text: main content if marked up, else the body. */
 function readableText(html: string): string {
   const stripped = html
@@ -205,12 +240,16 @@ function readableText(html: string): string {
   // Keep line structure so lists and steps stay readable.
   const withBreaks = main.replace(/<(br|\/p|\/li|\/h[1-6]|\/div|\/tr)\b[^>]*>/gi, "\n");
   const title = clean(html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "");
+  // Short pages often keep the gist in their description (social posts, videos).
+  const description = meta(html, "og:description") ?? meta(html, "description");
   const body = decodeEntities(withBreaks.replace(/<[^>]*>/g, " "))
     .split("\n")
     .map((l) => l.replace(/\s+/g, " ").trim())
     .filter(Boolean)
     .join("\n");
-  return [title && `Title: ${title}`, body].filter(Boolean).join("\n");
+  return [title && `Title: ${title}`, description && `Description: ${description}`, body]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function extractRecipePage(html: string, pageUrl: string): PageExtract {
@@ -227,13 +266,25 @@ export function extractRecipePage(html: string, pageUrl: string): PageExtract {
     return {
       text: recipeText(recipe).slice(0, MAX_TEXT),
       fromJsonLd: true,
+      fromCaption: false,
       siteName,
       image: absolute(imageOf(recipe.image) ?? meta(html, "og:image"), pageUrl),
+    };
+  }
+  const video = tiktokVideo(html);
+  if (video) {
+    return {
+      text: `Video caption:\n${video.caption}`.slice(0, MAX_TEXT),
+      fromJsonLd: false,
+      fromCaption: true,
+      siteName: video.author ? `${video.author} · TikTok` : "TikTok",
+      image: absolute(video.cover, pageUrl),
     };
   }
   return {
     text: readableText(html).slice(0, MAX_TEXT),
     fromJsonLd: false,
+    fromCaption: false,
     siteName,
     image: absolute(meta(html, "og:image"), pageUrl),
   };
@@ -243,4 +294,5 @@ export function extractRecipePage(html: string, pageUrl: string): PageExtract {
  * Pages without recipe data and with almost no text (a login wall, an empty
  * shell rendered by JavaScript) aren't worth an AI call.
  */
-export const tooLittleText = (e: PageExtract) => !e.fromJsonLd && e.text.length < 200;
+export const tooLittleText = (e: PageExtract) =>
+  !e.fromJsonLd && !e.fromCaption && e.text.length < 200;

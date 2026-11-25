@@ -96,7 +96,7 @@ Rules:
 - Ingredients: display_text is the line as a cook would write it, in Hebrew ("3 גזרים, פרוסים"). quantity and unit are in metric base units: g, ml, or unit for countable items. Convert: 1 cup = 240 ml, 1 tbsp = 15 ml, 1 tsp = 5 ml, 1 oz = 28 g, 1 lb = 454 g, °F to °C. Leave quantity and unit null when the text gives none ("salt to taste").
 - canonical_name: the ingredient's singular Hebrew name without adjectives or preparation ("גזר", not "גזרים פרוסים").
 - section: the supermarket section it's bought in. optional: true only for garnish or explicitly optional items.
-- steps: one instruction per item, in order, without numbering.
+- steps: one instruction per item, in order, without numbering. Only steps the text actually gives: never invent a method, quantities or times that aren't there. A video caption often lists only ingredients; then return an empty steps list and a low steps confidence.
 - Times are minutes. oven_temp is °C, null if no oven.
 - confidence: 0 to 1 per field group; below 0.7 means the cook should check it.`;
 
