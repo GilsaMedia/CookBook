@@ -13,6 +13,18 @@ export type Photo = { image: string; page: string; site: string };
 
 type Page = { url: string; match: "exact" | "similar" };
 
+// Social networks show a logo or a sign-in page to a visitor who isn't
+// signed in, not the dish: never take a photo from them.
+const SOCIAL =
+  /(^|\.)(facebook\.com|fb\.watch|fb\.com|instagram\.com|tiktok\.com|youtube\.com|youtu\.be|x\.com|twitter\.com|pinterest\.[a-z.]+|threads\.net)$/i;
+export const isSocial = (url: string) => {
+  try {
+    return SOCIAL.test(new URL(url).hostname);
+  } catch {
+    return true;
+  }
+};
+
 const host = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
@@ -66,13 +78,13 @@ export async function findPhoto(recipe: {
   hint?: string | null;
   sourceUrl?: string | null;
 }): Promise<{ photo: Photo | null; busy?: boolean }> {
-  if (recipe.sourceUrl && !videoSite(recipe.sourceUrl)) {
+  if (recipe.sourceUrl && !videoSite(recipe.sourceUrl) && !isSocial(recipe.sourceUrl)) {
     const own = await pagePhoto(recipe.sourceUrl);
     if (own) return { photo: own };
   }
   const found = await findRecipePages(recipe.title, recipe.hint);
   if ("error" in found) return { photo: null, busy: found.error === "busy" };
-  for (const page of found.pages) {
+  for (const page of found.pages.filter((p) => !isSocial(p.url))) {
     const photo = await pagePhoto(page.url);
     if (photo) return { photo };
   }

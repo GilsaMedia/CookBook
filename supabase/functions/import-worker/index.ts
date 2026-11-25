@@ -20,6 +20,20 @@ import { savePhoto } from "../_shared/save-photo.ts";
 const BUDGET_MS = 70_000; // start new work only this long into a run
 const AT_ONCE = 2; // the AI server runs two jobs at a time
 const OUTAGE = new Set(["ai_unavailable", "usage_limit"]);
+// Lines that aren't the family's own words: navigation, and a document's
+// own "nothing was copied here" placeholder.
+const NOT_A_NOTE = /^Title:|לתוכן\s*העניינים|הוספה\s*לארוחה|לא\s*הועתק\s*תוכן/;
+
+/** A "recipe" with fewer than two ingredients and no steps is only a name. */
+const thin = (r: Recipe & { steps?: string[] }) =>
+  (r.ingredients?.length ?? 0) < 2 && (r.steps?.length ?? 0) === 0;
+
+/** What the family wrote under a recipe's name, kept when it's found online. */
+const familyNotes = (input: string) =>
+  input
+    .split("\n")
+    .map((l) => l.replace(/^[-●·•\s]+/, "").trim())
+    .filter((l) => l && !NOT_A_NOTE.test(l));
 
 type Entry = { title?: string; group?: string | null; sourceUrl?: string | null };
 type Recipe = { title?: string; ingredients?: { canonical_name?: string | null }[] };
@@ -76,8 +90,15 @@ Deno.serve(async () => {
       : item.task === "import_url"
         ? await importLink(item.input)
         : await importText(item.input);
+    // Next to nothing (a name and a note): look the recipe up on the web.
+    if (out.ok && !lookup && item.task === "structure_recipe" && thin(out.result as Recipe))
+      return finish(item.id, "queued", { stage: "lookup" }, "next");
     if (out.ok) {
-      const result: Result = { recipe: out.result as Recipe, source: out.source };
+      const recipe = out.result as Recipe & { steps?: string[] };
+      const notes = lookup ? familyNotes(item.input) : [];
+      if (notes.length)
+        recipe.steps = [...(recipe.steps ?? []), `הערה מהמשפחה: ${notes.join(" ")}`];
+      const result: Result = { recipe, source: out.source };
       if (out.source?.image) return finish(item.id, "done", result, "");
       return finish(item.id, "queued", { ...result, stage: "photo" }, "next");
     }
