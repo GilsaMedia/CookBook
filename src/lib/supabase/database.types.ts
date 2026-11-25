@@ -123,8 +123,8 @@ export type Database = {
       };
       book_members: {
         Row: {
-          can_publish: boolean;
           book_id: string;
+          can_publish: boolean;
           created_at: string;
           invited_by: string | null;
           revoked_at: string | null;
@@ -132,8 +132,8 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          can_publish?: boolean;
           book_id: string;
+          can_publish?: boolean;
           created_at?: string;
           invited_by?: string | null;
           revoked_at?: string | null;
@@ -141,8 +141,8 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          can_publish?: boolean;
           book_id?: string;
+          can_publish?: boolean;
           created_at?: string;
           invited_by?: string | null;
           revoked_at?: string | null;
@@ -692,7 +692,7 @@ export type Database = {
           from_recipe_id?: string;
           images_copied?: boolean;
           share_id?: string;
-          to_recipe_id?: string;
+          to_recipe_id?: string | null;
         };
         Relationships: [
           {
@@ -713,11 +713,10 @@ export type Database = {
       };
       shares: {
         Row: {
-          can_add: boolean;
-          follow: boolean;
-          to_book_id: string | null;
           added_count: number;
+          can_add: boolean;
           created_at: string;
+          follow: boolean;
           from_book_id: string;
           from_user: string;
           id: string;
@@ -725,14 +724,14 @@ export type Database = {
           responded_at: string | null;
           sender_name: string;
           status: Database["public"]["Enums"]["share_status"];
+          to_book_id: string | null;
           to_email: string;
         };
         Insert: {
-          can_add?: boolean;
-          follow?: boolean;
-          to_book_id?: string | null;
           added_count?: number;
+          can_add?: boolean;
           created_at?: string;
+          follow?: boolean;
           from_book_id: string;
           from_user?: string;
           id?: string;
@@ -740,14 +739,14 @@ export type Database = {
           responded_at?: string | null;
           sender_name: string;
           status?: Database["public"]["Enums"]["share_status"];
+          to_book_id?: string | null;
           to_email: string;
         };
         Update: {
-          can_add?: boolean;
-          follow?: boolean;
-          to_book_id?: string | null;
           added_count?: number;
+          can_add?: boolean;
           created_at?: string;
+          follow?: boolean;
           from_book_id?: string;
           from_user?: string;
           id?: string;
@@ -755,6 +754,7 @@ export type Database = {
           responded_at?: string | null;
           sender_name?: string;
           status?: Database["public"]["Enums"]["share_status"];
+          to_book_id?: string | null;
           to_email?: string;
         };
         Relationships: [
@@ -770,6 +770,13 @@ export type Database = {
             columns: ["from_user"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shares_to_book_id_fkey";
+            columns: ["to_book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
             referencedColumns: ["id"];
           },
         ];
@@ -818,12 +825,6 @@ export type Database = {
         Args: { p_book?: string; p_recipe_ids?: string[]; p_share: string };
         Returns: number;
       };
-      create_book: { Args: { p_name: string }; Returns: string };
-      stop_share_updates: { Args: { p_share: string }; Returns: undefined };
-      sync_shared_books: {
-        Args: never;
-        Returns: { added: number; sender_name: string; share_id: string }[];
-      };
       access_requests: {
         Args: never;
         Returns: {
@@ -862,6 +863,7 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      create_book: { Args: { p_name: string }; Returns: string };
       decide_access: {
         Args: { p_approve: boolean; p_user: string };
         Returns: undefined;
@@ -907,6 +909,15 @@ export type Database = {
           category: string;
           recipe_id: string;
           title: string;
+        }[];
+      };
+      stop_share_updates: { Args: { p_share: string }; Returns: undefined };
+      sync_shared_books: {
+        Args: never;
+        Returns: {
+          added: number;
+          sender_name: string;
+          share_id: string;
         }[];
       };
     };
