@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { fillSignIn, PASSWORD, readEmail, signIn, signUp, uniqueEmail } from "./helpers";
+import {
+  admin,
+  approve,
+  fillSignIn,
+  PASSWORD,
+  readEmail,
+  signIn,
+  signUp,
+  uniqueEmail,
+  userId,
+} from "./helpers";
 
 test("signed-out visitors are sent to /login and come back after signing up", async ({ page }) => {
   await page.goto("/meals");
@@ -7,7 +17,13 @@ test("signed-out visitors are sent to /login and come back after signing up", as
   await expect(page.getByRole("heading", { name: "כניסה לספר המתכונים" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "ניווט ראשי" })).toHaveCount(0);
 
-  await signUp(page, uniqueEmail("signup"));
+  const email = uniqueEmail("signup");
+  await signUp(page, email);
+  // A new account waits for approval, and sees nothing of the app.
+  await expect(page.getByRole("heading", { name: "הבקשה שלך מחכה לאישור" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "ניווט ראשי" })).toHaveCount(0);
+  await approve(email);
+  await page.getByRole("button", { name: "לבדוק שוב" }).click();
   await expect(page).toHaveURL(/\/meals$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("ארוחות");
   await expect(page.getByRole("navigation", { name: "ניווט ראשי" })).toBeVisible();
@@ -91,4 +107,37 @@ test("a broken link lands on /login with an explanation", async ({ page }) => {
   await expect(
     page.getByRole("alert").filter({ hasText: "הקישור לא תקין או שפג תוקפו. אפשר לבקש חדש." }),
   ).toBeVisible();
+});
+
+test("the admin approves a new account on the requests page", async ({ browser }) => {
+  const boss = await (await browser.newContext()).newPage();
+  const bossEmail = await signIn(boss);
+  await admin()
+    .from("app_admins")
+    .insert({ user_id: await userId(bossEmail) });
+
+  const newcomer = await (await browser.newContext()).newPage();
+  const email = uniqueEmail("newcomer");
+  await newcomer.goto("/login");
+  await signUp(newcomer, email);
+  await newcomer.getByLabel("איך קוראים לך? (כדי שידעו מי מבקש)").fill("דנה");
+  await newcomer.getByRole("button", { name: "שמירה" }).click();
+  await expect(newcomer.getByText("נשמר.")).toBeVisible();
+
+  await boss.reload();
+  await boss.getByRole("link", { name: /^בקשות \(\d+\)$/ }).click();
+  const request = boss.getByRole("listitem").filter({ hasText: email });
+  await expect(request).toContainText("דנה");
+  await request.getByRole("button", { name: "אישור" }).click();
+  await expect(request).toContainText("אושר/ה");
+
+  await newcomer.getByRole("button", { name: "לבדוק שוב" }).click();
+  await expect(newcomer.getByRole("navigation", { name: "ניווט ראשי" })).toBeVisible();
+});
+
+test("only admins see the requests page", async ({ page }) => {
+  await signIn(page);
+  await expect(page.getByRole("link", { name: /^בקשות/ })).toHaveCount(0);
+  await page.goto("/requests");
+  await expect(page.getByText("הדף הזה זמין רק למנהלי האפליקציה.")).toBeVisible();
 });

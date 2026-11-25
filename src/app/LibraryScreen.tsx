@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAccess } from "@/components/auth/AuthProvider";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { LibraryView } from "@/components/library/LibraryView";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
+import { getAccessRequests } from "@/lib/data/access";
 import { incomingShares, type IncomingShare } from "@/lib/data/sharing";
 import { isDemo } from "@/lib/demo";
 import type { Library } from "@/lib/recipes/types";
@@ -16,6 +18,16 @@ type State = { status: "loading" } | { status: "error" } | { status: "ready"; li
 export function LibraryScreen() {
   const [state, setState] = useState<State>({ status: "loading" });
   const [incoming, setIncoming] = useState<IncomingShare[]>([]);
+  const isAdmin = !!useAccess()?.isAdmin;
+  const [waiting, setWaiting] = useState(0);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    getAccessRequests().then(
+      (r) => setWaiting(r.filter((x) => x.status === "pending").length),
+      () => {},
+    );
+  }, [isAdmin]);
 
   useEffect(() => {
     if (isDemo) return;
@@ -46,6 +58,16 @@ export function LibraryScreen() {
         </div>
         {!isDemo && (
           <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Link
+                href="/requests"
+                className={`press flex h-11 items-center px-3 text-sm font-semibold ${
+                  waiting ? "text-red-700" : "text-muted"
+                }`}
+              >
+                {waiting ? he.access.requestsCount(waiting) : he.access.requests}
+              </Link>
+            )}
             {library && library.recipes.length > 0 && (
               <Link
                 href="/share"

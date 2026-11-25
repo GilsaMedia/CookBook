@@ -33,6 +33,12 @@ export type Database = {
   };
   public: {
     Tables: {
+      app_admins: {
+        Row: { created_at: string; user_id: string };
+        Insert: { created_at?: string; user_id: string };
+        Update: { created_at?: string; user_id?: string };
+        Relationships: [];
+      };
       ai_access: {
         Row: {
           book_id: string;
@@ -475,22 +481,31 @@ export type Database = {
       };
       profiles: {
         Row: {
+          approved_at: string | null;
+          approved_by: string | null;
           created_at: string;
           display_name: string | null;
           email: string | null;
           id: string;
+          rejected_at: string | null;
         };
         Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           created_at?: string;
           display_name?: string | null;
           email?: string | null;
           id: string;
+          rejected_at?: string | null;
         };
         Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
           created_at?: string;
           display_name?: string | null;
           email?: string | null;
           id?: string;
+          rejected_at?: string | null;
         };
         Relationships: [];
       };
@@ -732,6 +747,24 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      access_requests: {
+        Args: never;
+        Returns: {
+          display_name: string | null;
+          email: string | null;
+          requested_at: string;
+          status: string;
+          user_id: string;
+        }[];
+      };
+      decide_access: {
+        Args: { p_approve: boolean; p_user: string };
+        Returns: undefined;
+      };
+      my_access: {
+        Args: never;
+        Returns: { is_admin: boolean; status: string }[];
+      };
       accept_share: {
         Args: { p_recipe_ids?: string[]; p_share: string };
         Returns: number;
