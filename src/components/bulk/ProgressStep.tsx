@@ -17,7 +17,11 @@ export function ProgressStep({
   const [job, setJob] = useState(initial);
 
   useEffect(() => {
-    if (job.status === "ready") return onReady(job);
+    if (job.status === "ready") {
+      // Not `return onReady(job)`: an effect may only return a cleanup function.
+      onReady(job);
+      return;
+    }
     const timer = setTimeout(async () => {
       try {
         setJob(await getJob(job.id));
