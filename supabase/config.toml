@@ -463,3 +463,8 @@ enabled = false
 # publishable/secret keys).
 [functions.ai]
 verify_jwt = false
+
+# Copies a recipe's source photo into Storage (supabase/functions/import-image).
+# Verifies the session itself and writes as the user, so RLS applies.
+[functions.import-image]
+verify_jwt = false
