@@ -5,9 +5,10 @@ import { expect, type Page } from "@playwright/test";
 const MAILPIT = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 
 export const uniqueEmail = (label = "e2e") => `${label}-${randomUUID().slice(0, 8)}@test.local`;
+export const PASSWORD = "kitchen-secret-42";
 
-/** Waits for the newest sign-in email to `email` and returns its code and link. */
-export async function readSignInEmail(email: string) {
+/** Waits for the newest email to `email` and returns its link and subject. */
+export async function readEmail(email: string) {
   for (let attempt = 0; attempt < 40; attempt++) {
     const search = await fetch(
       `${MAILPIT}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`,
@@ -15,32 +16,35 @@ export async function readSignInEmail(email: string) {
     const id = search.messages?.[0]?.ID;
     if (id) {
       const message = await fetch(`${MAILPIT}/api/v1/message/${id}`).then((r) => r.json());
-      const html: string = message.HTML;
-      const code = html.match(/\b(\d{6})\b/)?.[1];
-      const link = html
+      const link = (message.HTML as string)
         .match(/href="([^"]+\/auth\/v1\/verify[^"]+)"/)?.[1]
         ?.replaceAll("&amp;", "&");
-      if (code && link) return { code, link, subject: message.Subject as string };
+      if (link) return { link, subject: message.Subject as string };
     }
     await new Promise((r) => setTimeout(r, 250));
   }
-  throw new Error(`No sign-in email arrived for ${email}`);
+  throw new Error(`No email arrived for ${email}`);
 }
 
-/** Requests a code on /login (already open) and returns the email's contents. */
-export async function requestCode(page: Page, email: string) {
+/** Opens an account on /login (already open). Local sign-ups skip verification. */
+export async function signUp(page: Page, email: string, password = PASSWORD) {
+  await page.getByRole("button", { name: "אין לך חשבון? פתיחת חשבון" }).click();
   await page.getByLabel("כתובת מייל").fill(email);
-  await page.getByRole("button", { name: "שליחת קוד" }).click();
-  await expect(page.getByText(`שלחנו קוד אל ${email}`)).toBeVisible();
-  return readSignInEmail(email);
+  await page.getByLabel("סיסמה (לפחות 8 תווים)").fill(password);
+  await page.getByRole("button", { name: "פתיחת חשבון", exact: true }).click();
 }
 
-/** Signs in through the real UI with the emailed 6-digit code. */
+/** Signs in on /login (already open) with email and password. */
+export async function fillSignIn(page: Page, email: string, password = PASSWORD) {
+  await page.getByLabel("כתובת מייל").fill(email);
+  await page.getByLabel("סיסמה", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "כניסה", exact: true }).click();
+}
+
+/** A new account, signed in through the real UI. */
 export async function signIn(page: Page, email = uniqueEmail()) {
   await page.goto("/login");
-  const { code } = await requestCode(page, email);
-  await page.getByLabel("הקוד מהמייל (6 ספרות)").fill(code);
-  await page.getByRole("button", { name: "כניסה", exact: true }).click();
+  await signUp(page, email);
   await expect(page).toHaveURL(/\/$/);
   return email;
 }

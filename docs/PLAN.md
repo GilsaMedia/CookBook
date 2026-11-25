@@ -191,6 +191,7 @@ Migrations for: profiles, books, book_members (role owner|contributor|viewer, re
 - Storage policies mirror table RLS.
 - Signup trigger creates profile + a book + owner membership + default categories.
 - Email magic-link auth wired into the Next.js app with server-side session handling.
+  - *Changed later (05b):* email + password. The email is verified once, by link, at sign-up; a forgotten password is reset by link. Links use the implicit flow so they work in whichever browser opens them.
 
 ## Constraints
 - Only make changes directly requested.
