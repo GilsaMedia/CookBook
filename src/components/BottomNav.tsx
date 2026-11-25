@@ -65,6 +65,8 @@ const tabs: Tab[] = [
 function isActive(pathname: string, href: string) {
   // Recipe pages belong to the library tab.
   if (href === "/") return pathname === "/" || pathname === "/recipe";
+  // Bulk import belongs to the add tab.
+  if (href === "/add" && pathname === "/import") return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

@@ -36,7 +36,10 @@ function makeDeflatedZip(name: string, data: Uint8Array, size: number) {
   const parts = (...p: Uint8Array[]) => {
     const out = new Uint8Array(p.reduce((s, x) => s + x.length, 0));
     let o = 0;
-    for (const x of p) (out.set(x, o), (o += x.length));
+    for (const x of p) {
+      out.set(x, o);
+      o += x.length;
+    }
     return out;
   };
   const local = parts(
