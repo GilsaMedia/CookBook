@@ -22,6 +22,9 @@ export type RecipeCard = {
   searchText: string;
   /** Excluded ingredients this recipe contains (§10). Empty when none. */
   warnings: string[];
+  /** Normalized canonical ingredient names, for duplicate checks on import. */
+  ingredientNames: string[];
+  sourceUrl: string | null;
 };
 
 export type RecipeIngredient = {
@@ -39,7 +42,7 @@ export type RecipeStep = {
 export type ImageCredit = { author: string; license: string; sourceUrl: string };
 
 /** Everything the recipe page shows. */
-export type RecipeDetail = Omit<RecipeCard, "searchText"> & {
+export type RecipeDetail = Omit<RecipeCard, "searchText" | "ingredientNames" | "sourceUrl"> & {
   imageCredit: ImageCredit | null;
   sourceName: string | null;
   sourceUrl: string | null;
