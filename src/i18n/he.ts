@@ -96,17 +96,25 @@ export const he = {
     ],
     keepConnect: "ייבוא מ-Google Keep",
     keepConnectHint:
-      "נפתח חלון של Google שמבקש רשות לקרוא את הפתקים (קריאה בלבד). הרשות משמשת רק לייבוא הזה.",
-    keepReading: (n: number) => (n ? `קוראים פתקים מ-Keep… ${n}` : "מתחברים ל-Google Keep…"),
-    keepOther: "דרך אחרת: ייצוא מ-Google Takeout",
+      "בלי קבצים ובלי הורדות: Google מעבירה את הפתקים ל-Drive שלך, ומשם הם מגיעים לכאן.",
+    keepConnecting: "מתחברים ל-Google…",
+    keepTakeoutTitle: "עוד צעד אחד ב-Google",
+    keepTakeoutSteps: [
+      "לוחצים ״פתיחת Google Takeout״ (רק Keep כבר מסומן).",
+      "לוחצים ״השלב הבא״.",
+      "ב״שיטת העברה״ בוחרים ״הוספה ל-Drive״.",
+      "לוחצים ״יצירת ייצוא״ וחוזרים לכאן.",
+    ],
+    keepPick: "בחירת הקובץ מ-Drive",
+    keepNotReady:
+      "עוד לא רואים את הקובץ? Google מכינה אותו, בדרך כלל תוך כמה דקות. נסו שוב עוד מעט; אפשר להשאיר את הדף פתוח.",
+    keepDownloading: "מעבירים את הפתקים מ-Drive…",
+    keepHaveZip: "כבר יש לי קובץ ZIP מ-Takeout",
     keepErrors: {
-      not_configured: "הייבוא הישיר מ-Keep עוד לא הוגדר באתר הזה. אפשר לייבא דרך Google Takeout.",
+      not_configured: "הייבוא מ-Google עוד לא הוגדר באתר הזה. אפשר להעלות קובץ ZIP מ-Takeout.",
       popup_closed: "חלון ההתחברות נסגר. אפשר לנסות שוב.",
-      denied: "Google לא אישרה גישה ל-Keep. אפשר לנסות שוב ולאשר את הגישה.",
-      api_disabled: "ה-API של Google Keep כבוי בפרויקט של האתר. צריך להפעיל אותו ב-Google Cloud.",
-      personal_account:
-        "Google לא נותנת לאפליקציות לקרוא את Keep בחשבון הזה. אפשר לייבא דרך Google Takeout, למטה.",
-      failed: "לא הצלחנו לקרוא את Keep. אפשר לנסות שוב, או לייבא דרך Google Takeout.",
+      denied: "Google לא אישרה גישה. אפשר לנסות שוב ולאשר.",
+      failed: "משהו השתבש מול Google. אפשר לנסות שוב.",
     } as Record<string, string>,
     keepNote:
       "Google Takeout הוא הייצוא הרשמי של Google: מקבלים קובץ ZIP עם כל הפתקים, התוויות והתמונות.",

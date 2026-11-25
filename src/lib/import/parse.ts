@@ -32,3 +32,21 @@ export async function parseCollection(name: string, bytes: Uint8Array): Promise<
   }
   throw new ParseError("unknown_zip");
 }
+
+/**
+ * One Google Takeout export of Keep, possibly split into several ZIPs
+ * (a note's photo can be in a different part). Returns the entries and
+ * the combined file list, for reading photos.
+ */
+export async function parseKeepArchives(parts: Uint8Array[]) {
+  let files;
+  try {
+    files = parts.flatMap((bytes) => readZip(bytes));
+  } catch {
+    throw new ParseError("unreadable");
+  }
+  if (!isKeepTakeout(files)) throw new ParseError("unknown_zip");
+  const entries = await readKeep(files);
+  if (!entries.length) throw new ParseError("no_notes");
+  return { parsed: { format: "keep" as const, entries }, files };
+}
