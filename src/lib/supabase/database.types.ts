@@ -123,6 +123,7 @@ export type Database = {
       };
       book_members: {
         Row: {
+          can_publish: boolean;
           book_id: string;
           created_at: string;
           invited_by: string | null;
@@ -131,6 +132,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          can_publish?: boolean;
           book_id: string;
           created_at?: string;
           invited_by?: string | null;
@@ -139,6 +141,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          can_publish?: boolean;
           book_id?: string;
           created_at?: string;
           invited_by?: string | null;
@@ -677,13 +680,13 @@ export type Database = {
           from_recipe_id: string;
           images_copied: boolean;
           share_id: string;
-          to_recipe_id: string;
+          to_recipe_id: string | null;
         };
         Insert: {
           from_recipe_id: string;
           images_copied?: boolean;
           share_id: string;
-          to_recipe_id: string;
+          to_recipe_id?: string | null;
         };
         Update: {
           from_recipe_id?: string;
@@ -710,6 +713,9 @@ export type Database = {
       };
       shares: {
         Row: {
+          can_add: boolean;
+          follow: boolean;
+          to_book_id: string | null;
           added_count: number;
           created_at: string;
           from_book_id: string;
@@ -722,6 +728,9 @@ export type Database = {
           to_email: string;
         };
         Insert: {
+          can_add?: boolean;
+          follow?: boolean;
+          to_book_id?: string | null;
           added_count?: number;
           created_at?: string;
           from_book_id: string;
@@ -734,6 +743,9 @@ export type Database = {
           to_email: string;
         };
         Update: {
+          can_add?: boolean;
+          follow?: boolean;
+          to_book_id?: string | null;
           added_count?: number;
           created_at?: string;
           from_book_id?: string;
@@ -803,8 +815,14 @@ export type Database = {
     };
     Functions: {
       accept_share: {
-        Args: { p_recipe_ids?: string[]; p_share: string };
+        Args: { p_book?: string; p_recipe_ids?: string[]; p_share: string };
         Returns: number;
+      };
+      create_book: { Args: { p_name: string }; Returns: string };
+      stop_share_updates: { Args: { p_share: string }; Returns: undefined };
+      sync_shared_books: {
+        Args: never;
+        Returns: { added: number; sender_name: string; share_id: string }[];
       };
       access_requests: {
         Args: never;

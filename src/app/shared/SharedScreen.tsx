@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { he } from "@/i18n/he";
+import { withBase } from "@/lib/demo";
+import { listBooks } from "@/lib/data/books";
+import { selectBook, selectedBookId } from "@/lib/data/current-book";
 import { isDemo } from "@/lib/demo";
 import {
   acceptShare,
@@ -20,7 +23,8 @@ type Step =
   | { name: "error" }
   | { name: "list"; shares: IncomingShare[] }
   | { name: "pick"; share: IncomingShare; recipes: SharedRecipe[] }
-  | { name: "done"; count: number; tag: string };
+  | { name: "done"; count: number; tag: string }
+  | { name: "joined"; senderName: string; bookId: string };
 
 /**
  * Shares waiting for this user: choose all or some of the recipes, and
@@ -100,6 +104,36 @@ export function SharedScreen() {
           ))}
         </ul>
       );
+  else if (step.name === "pick" && step.share.canAdd)
+    body = (
+      <Invite
+        share={step.share}
+        onJoined={() =>
+          setStep({
+            name: "joined",
+            senderName: step.share.senderName,
+            bookId: step.share.fromBookId,
+          })
+        }
+        onDeclined={load}
+      />
+    );
+  else if (step.name === "joined")
+    body = (
+      <div className="flex flex-col gap-4">
+        <p className="text-lg font-semibold">{he.shared.joined(step.senderName)}</p>
+        <button
+          type="button"
+          onClick={() => {
+            selectBook(step.bookId);
+            window.location.assign(withBase("/"));
+          }}
+          className="press flex h-12 items-center justify-center rounded-full bg-accent font-semibold text-white"
+        >
+          {he.shared.toBook}
+        </button>
+      </div>
+    );
   else if (step.name === "pick")
     body = (
       <Pick
@@ -151,6 +185,20 @@ function Pick({
   const [selected, setSelected] = useState(new Set(recipes.map((r) => r.id)));
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string>();
+  // Into the book the user is in, when it's theirs; else their first own book.
+  const [target, setTarget] = useState<{ id: string; name: string } | null>(null);
+  const everything = selected.size === recipes.length;
+
+  useEffect(() => {
+    listBooks().then(
+      (books) => {
+        const own = books.filter((b) => b.role === "owner");
+        const book = own.find((b) => b.id === selectedBookId()) ?? own[0];
+        if (book) setTarget({ id: book.id, name: book.name });
+      },
+      () => {},
+    );
+  }, []);
 
   // Grouped by category, in the order they come.
   const groups = useMemo(() => {
@@ -173,7 +221,8 @@ function Pick({
     setError(undefined);
     setStatus(he.shared.adding);
     try {
-      const count = await acceptShare(share.id, [...selected]);
+      // Everything: null, so a whole-book share keeps following the book.
+      const count = await acceptShare(share.id, everything ? null : [...selected], target?.id);
       await copySharedPhotos(share.id, (done, total) => setStatus(he.shared.photos(done, total)));
       onDone(count);
     } catch (e) {
@@ -196,6 +245,10 @@ function Pick({
     <div className="flex flex-col gap-4">
       <h2 className="text-xl font-bold">{he.shared.from(share.senderName)}</h2>
       <p className="text-sm text-muted">{he.shared.intro}</p>
+      {target && <p className="text-sm font-medium">{he.shared.intoBook(target.name)}</p>}
+      {share.recipeCount === null && everything && (
+        <p className="text-sm text-muted">{he.shared.followNote}</p>
+      )}
       <div className="flex gap-4 text-sm">
         <button
           type="button"
@@ -250,6 +303,70 @@ function Pick({
       <button
         type="button"
         disabled={!!status}
+        onClick={decline}
+        className="press h-11 font-semibold text-muted"
+      >
+        {he.shared.decline}
+      </button>
+    </div>
+  );
+}
+
+/** An invitation into the sharer's book itself. */
+function Invite({
+  share,
+  onJoined,
+  onDeclined,
+}: {
+  share: IncomingShare;
+  onJoined: () => void;
+  onDeclined: () => void;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+
+  async function join() {
+    setPending(true);
+    setError(undefined);
+    try {
+      await acceptShare(share.id, null);
+      onJoined();
+    } catch (e) {
+      const code = e instanceof ShareError ? e.message : "default";
+      setError(he.shared.errors[code] ?? he.shared.errors.default);
+      setPending(false);
+    }
+  }
+
+  async function decline() {
+    try {
+      await declineShare(share.id);
+      onDeclined();
+    } catch {
+      setError(he.shared.errors.default);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-xl font-bold">{he.shared.invite(share.senderName)}</h2>
+      <p>{he.shared.inviteText}</p>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={pending}
+        onClick={join}
+        className="press h-12 rounded-full bg-accent text-base font-semibold text-white disabled:opacity-60"
+      >
+        {pending ? he.shared.joining : he.shared.join}
+      </button>
+      <button
+        type="button"
+        disabled={pending}
         onClick={decline}
         className="press h-11 font-semibold text-muted"
       >

@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAccess } from "@/components/auth/AuthProvider";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { BookSwitcher } from "@/components/library/BookSwitcher";
 import { LibraryView } from "@/components/library/LibraryView";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
 import { getAccessRequests } from "@/lib/data/access";
-import { incomingShares, type IncomingShare } from "@/lib/data/sharing";
+import { incomingShares, syncSharedBooks, type IncomingShare } from "@/lib/data/sharing";
 import { isDemo } from "@/lib/demo";
 import type { Library } from "@/lib/recipes/types";
 
@@ -29,6 +30,8 @@ export function LibraryScreen() {
     );
   }, [isAdmin]);
 
+  const [synced, setSynced] = useState<{ senderName: string; added: number }[]>([]);
+
   useEffect(() => {
     if (isDemo) return;
     incomingShares().then(setIncoming, () => {});
@@ -36,10 +39,22 @@ export function LibraryScreen() {
 
   useEffect(() => {
     let live = true;
-    getLibrary().then(
-      (library) => live && setState({ status: "ready", library }),
-      () => live && setState({ status: "error" }),
-    );
+    const load = () =>
+      getLibrary().then(
+        (library) => live && setState({ status: "ready", library }),
+        () => live && setState({ status: "error" }),
+      );
+    load();
+    // Books shared whole with this user: copy in what was added since.
+    if (!isDemo)
+      syncSharedBooks().then(
+        (news) => {
+          if (!live || news.length === 0) return;
+          setSynced(news);
+          load();
+        },
+        () => {},
+      );
     return () => {
       live = false;
     };
@@ -51,7 +66,15 @@ export function LibraryScreen() {
     <div className="flex flex-col gap-5">
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl leading-tight font-bold">{library?.bookName ?? he.app.name}</h1>
+          {isDemo || !library?.bookId ? (
+            <h1 className="text-3xl leading-tight font-bold">{library?.bookName ?? he.app.name}</h1>
+          ) : (
+            <BookSwitcher
+              currentId={library.bookId}
+              currentName={library.bookName ?? he.app.name}
+              isOwner={!!library.isOwner}
+            />
+          )}
           {library && library.recipes.length > 0 && (
             <p className="text-sm text-muted">{he.library.count(library.recipes.length)}</p>
           )}
@@ -68,7 +91,7 @@ export function LibraryScreen() {
                 {waiting ? he.access.requestsCount(waiting) : he.access.requests}
               </Link>
             )}
-            {library && library.recipes.length > 0 && (
+            {library?.isOwner && library.recipes.length > 0 && (
               <Link
                 href="/share"
                 className="press flex h-11 items-center px-3 text-sm font-semibold text-accent"
@@ -80,6 +103,15 @@ export function LibraryScreen() {
           </div>
         )}
       </header>
+      {synced.map((n) => (
+        <p
+          key={n.senderName}
+          role="status"
+          className="rounded-2xl bg-accent/10 px-4 py-3 font-semibold"
+        >
+          {he.library.synced(n.senderName, n.added)}
+        </p>
+      ))}
       {incoming.length > 0 && (
         <Link
           href="/shared"

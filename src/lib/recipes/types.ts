@@ -57,6 +57,9 @@ export type RecipeDetail = Omit<RecipeCard, "searchText" | "ingredientNames" | "
 
 export type Library = {
   bookName: string | null;
+  /** The book shown (null in the demo), and whether the user owns it. */
+  bookId?: string | null;
+  isOwner?: boolean;
   categories: CategorySummary[];
   recipes: RecipeCard[];
 };
