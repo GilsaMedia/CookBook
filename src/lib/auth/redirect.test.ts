@@ -13,6 +13,8 @@ describe("safeNext", () => {
     ["javascript:alert(1)", "/"],
     ["/login", "/"],
     ["/auth/callback", "/"],
+    ["/auth/callback#x", "/"],
+    ["/auth/reset", "/auth/reset"],
   ])("%s → %s", (input, expected) => {
     expect(safeNext(input)).toBe(expected);
   });

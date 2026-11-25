@@ -6,7 +6,9 @@ export function safeNext(next: string | null | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
     return "/";
   }
-  if (isPublicPath(next.split("?")[0])) return "/";
+  const path = next.split(/[?#]/)[0];
+  // The reset link signs in, then lands on the new-password page.
+  if (isPublicPath(path) && path !== "/auth/reset") return "/";
   return next;
 }
 
