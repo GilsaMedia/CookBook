@@ -82,7 +82,7 @@ async function firstImages(db: Db, bookId: string, recipeIds?: string[]) {
 }
 
 const RECIPE_COLUMNS =
-  "id, title, category_id, prep_time, cook_time, search_text, source_name, source_url, servings, cuisine, dish_role";
+  "id, title, category_id, prep_time, cook_time, search_text, source_name, source_url, servings, cuisine, dish_role, tags";
 
 /** The signed-in user's library. Viewers only get approved recipes (RLS). */
 export async function supabaseLibrary(): Promise<Library> {

@@ -25,18 +25,27 @@ export function LibraryView({ library }: { library: Library }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [tag, setTag] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(query), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Labels like "שותף מגיל" filter like categories.
+  const tags = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of library.recipes)
+      for (const t of r.tags) counts.set(t, (counts.get(t) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [library.recipes]);
+
   const results = useMemo(() => {
-    const inCategory = categoryId
-      ? library.recipes.filter((r) => r.categoryId === categoryId)
-      : library.recipes;
-    return searchItems(inCategory, debounced, (r) => r.searchText);
-  }, [library.recipes, categoryId, debounced]);
+    const filtered = library.recipes.filter(
+      (r) => (!categoryId || r.categoryId === categoryId) && (!tag || r.tags.includes(tag)),
+    );
+    return searchItems(filtered, debounced, (r) => r.searchText);
+  }, [library.recipes, categoryId, tag, debounced]);
 
   if (library.recipes.length === 0) {
     return (
@@ -88,9 +97,12 @@ export function LibraryView({ library }: { library: Library }) {
       >
         <button
           type="button"
-          aria-pressed={categoryId === null}
-          onClick={() => setCategoryId(null)}
-          className={chipClass(categoryId === null)}
+          aria-pressed={categoryId === null && tag === null}
+          onClick={() => {
+            setCategoryId(null);
+            setTag(null);
+          }}
+          className={chipClass(categoryId === null && tag === null)}
         >
           {he.library.all}
           <span className="opacity-60">{library.recipes.length}</span>
@@ -101,11 +113,29 @@ export function LibraryView({ library }: { library: Library }) {
             type="button"
             aria-pressed={categoryId === c.id}
             // Tapping the active chip again clears the filter.
-            onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
+            onClick={() => {
+              setCategoryId(categoryId === c.id ? null : c.id);
+              setTag(null);
+            }}
             className={chipClass(categoryId === c.id)}
           >
             {c.name}
             <span className="opacity-60">{c.count}</span>
+          </button>
+        ))}
+        {tags.map(([t, count]) => (
+          <button
+            key={t}
+            type="button"
+            aria-pressed={tag === t}
+            onClick={() => {
+              setTag(tag === t ? null : t);
+              setCategoryId(null);
+            }}
+            className={chipClass(tag === t)}
+          >
+            {t}
+            <span className="opacity-60">{count}</span>
           </button>
         ))}
       </div>
@@ -126,6 +156,14 @@ export function LibraryView({ library }: { library: Library }) {
                 <div className="flex flex-1 flex-col gap-1 p-3">
                   <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
                   <p className="text-sm text-muted">{cardMeta(r.categoryName, r.totalMinutes)}</p>
+                  {r.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="w-fit rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent"
+                    >
+                      {t}
+                    </span>
+                  ))}
                   <WarningChip names={r.warnings} />
                 </div>
               </Link>

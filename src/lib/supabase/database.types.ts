@@ -632,6 +632,66 @@ export type Database = {
           },
         ];
       };
+      share_copies: {
+        Row: {
+          from_recipe_id: string;
+          images_copied: boolean;
+          share_id: string;
+          to_recipe_id: string;
+        };
+        Insert: {
+          from_recipe_id: string;
+          images_copied?: boolean;
+          share_id: string;
+          to_recipe_id: string;
+        };
+        Update: {
+          from_recipe_id?: string;
+          images_copied?: boolean;
+          share_id?: string;
+          to_recipe_id?: string;
+        };
+        Relationships: [];
+      };
+      shares: {
+        Row: {
+          added_count: number;
+          created_at: string;
+          from_book_id: string;
+          from_user: string;
+          id: string;
+          recipe_ids: string[] | null;
+          responded_at: string | null;
+          sender_name: string;
+          status: Database["public"]["Enums"]["share_status"];
+          to_email: string;
+        };
+        Insert: {
+          added_count?: number;
+          created_at?: string;
+          from_book_id: string;
+          from_user?: string;
+          id?: string;
+          recipe_ids?: string[] | null;
+          responded_at?: string | null;
+          sender_name: string;
+          status?: Database["public"]["Enums"]["share_status"];
+          to_email: string;
+        };
+        Update: {
+          added_count?: number;
+          created_at?: string;
+          from_book_id?: string;
+          from_user?: string;
+          id?: string;
+          recipe_ids?: string[] | null;
+          responded_at?: string | null;
+          sender_name?: string;
+          status?: Database["public"]["Enums"]["share_status"];
+          to_email?: string;
+        };
+        Relationships: [];
+      };
       steps: {
         Row: {
           book_id: string;
@@ -672,6 +732,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_share: {
+        Args: { p_recipe_ids?: string[]; p_share: string };
+        Returns: number;
+      };
       ai_take_quota: {
         Args: { p_book: string; p_user: string };
         Returns: string;
@@ -712,6 +776,26 @@ export type Database = {
       keepalive: { Args: never; Returns: string };
       normalize_hebrew: { Args: { input: string }; Returns: string };
       retry_import: { Args: { p_job: string }; Returns: number };
+      share_photos: {
+        Args: { p_share: string };
+        Returns: {
+          credit_name: string | null;
+          credit_url: string | null;
+          from_recipe_id: string;
+          position: number | null;
+          storage_path: string | null;
+          to_book_id: string;
+          to_recipe_id: string;
+        }[];
+      };
+      share_photos_done: {
+        Args: { p_from_recipe_ids: string[]; p_share: string };
+        Returns: undefined;
+      };
+      share_preview: {
+        Args: { p_share: string };
+        Returns: { category: string | null; recipe_id: string; title: string }[];
+      };
     };
     Enums: {
       dish_role: "main" | "side" | "salad" | "soup" | "dessert" | "pastry" | "spread" | "drink";
@@ -734,6 +818,7 @@ export type Database = {
       member_role: "owner" | "contributor" | "viewer";
       preference_scope: "global" | "category" | "recipe";
       recipe_status: "draft" | "pending" | "approved" | "rejected";
+      share_status: "pending" | "accepted" | "declined";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -879,6 +964,7 @@ export const Constants = {
       member_role: ["owner", "contributor", "viewer"],
       preference_scope: ["global", "category", "recipe"],
       recipe_status: ["draft", "pending", "approved", "rejected"],
+      share_status: ["pending", "accepted", "declined"],
     },
   },
 } as const;
