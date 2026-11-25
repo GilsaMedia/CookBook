@@ -2,10 +2,13 @@ import Link from "next/link";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
 import { WarningChip } from "@/components/recipe/WarningChip";
 import { he } from "@/i18n/he";
+import { isDemo } from "@/lib/demo";
 import { formatMinutes } from "@/lib/recipes/format";
 import type { RecipeDetail } from "@/lib/recipes/types";
 
 const chip = "inline-flex items-center rounded-full bg-white px-3 py-1 text-sm ring-1 ring-rule";
+const tagChip =
+  "inline-flex items-center rounded-full bg-accent/10 px-3 py-1 text-sm font-medium text-accent";
 
 /** Recipe page (screen 2): the view, given a loaded recipe. */
 export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
@@ -66,6 +69,11 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
               {c}
             </span>
           ))}
+          {recipe.tags.map((t) => (
+            <span key={t} className={tagChip}>
+              {t}
+            </span>
+          ))}
           <WarningChip names={recipe.warnings} />
         </div>
         {recipe.sourceUrl && (
@@ -89,6 +97,15 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
           </p>
         )}
       </header>
+
+      {!isDemo && (
+        <Link
+          href={`/share?recipe=${recipe.id}`}
+          className="press -my-2 flex h-11 w-fit items-center text-sm font-semibold text-accent"
+        >
+          {he.recipe.share}
+        </Link>
+      )}
 
       {/* Wired in later prompts: meal tray (6) and cook mode (8). */}
       <div className="flex gap-3">

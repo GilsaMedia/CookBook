@@ -24,6 +24,7 @@ export type RecipeRow = {
   servings: number | null;
   cuisine: string | null;
   dish_role: DishRole | null;
+  tags?: string[];
 };
 export type IngredientRow = {
   id: string;
@@ -67,6 +68,7 @@ function card(
       ...new Set(ingredients.map((i) => normalizeHebrew(i.canonical_name ?? i.display_text))),
     ].filter(Boolean),
     sourceUrl: r.source_url,
+    tags: r.tags ?? [],
   };
 }
 

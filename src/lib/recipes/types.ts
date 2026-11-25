@@ -25,6 +25,8 @@ export type RecipeCard = {
   /** Normalized canonical ingredient names, for duplicate checks on import. */
   ingredientNames: string[];
   sourceUrl: string | null;
+  /** Labels such as "שותף מגיל" (a recipe someone shared). */
+  tags: string[];
 };
 
 export type RecipeIngredient = {
