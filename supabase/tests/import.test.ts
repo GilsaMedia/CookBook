@@ -296,6 +296,15 @@ describe("finishing every recipe", () => {
 describe("finding photos", () => {
   // A book of its own: the others used up today's imports.
   let cook: TestUser;
+  // Earlier tests leave other jobs' items queued or claimed: set them aside.
+  const onlyThisJob = async (jobId: string) => {
+    await admin()
+      .from("import_jobs")
+      .update({ status: "cancelled" })
+      .neq("id", jobId)
+      .in("status", ["queued", "running"]);
+    await admin().from("import_items").update({ status: "failed" }).eq("status", "processing");
+  };
   beforeAll(async () => {
     cook = await createUser("imp-photos");
     await admin().from("ai_access").insert({ book_id: cook.bookId });
@@ -305,7 +314,7 @@ describe("finding photos", () => {
     const { data: job } = await newJob(cook);
     await cook.client.from("import_items").insert(item(job!.id, cook.bookId, 0));
     await cook.client.from("import_jobs").update({ status: "queued" }).eq("id", job!.id);
-    await admin().from("import_items").update({ status: "failed" }).eq("status", "processing");
+    await onlyThisJob(job!.id);
     const { data: claimed } = await admin().rpc("claim_import_items", { p_limit: 2 });
     const mine = claimed!.find((c) => c.job_id === job!.id)!;
 
@@ -352,7 +361,7 @@ describe("finding photos", () => {
     });
     expect(addError).toBeNull();
     await cook.client.from("import_jobs").update({ status: "queued" }).eq("id", job!.id);
-    await admin().from("import_items").update({ status: "failed" }).eq("status", "processing");
+    await onlyThisJob(job!.id);
     const { data: claimed } = await admin().rpc("claim_import_items", { p_limit: 2 });
     const mine = claimed!.find((c) => c.job_id === job!.id)!;
     await admin().rpc("finish_import_item", {
