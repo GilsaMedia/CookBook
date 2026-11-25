@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { he } from "@/i18n/he";
 import type { ImageFiles } from "@/lib/data/imports";
+import {
+  connectKeep,
+  disconnectKeep,
+  KeepApiError,
+  keepApiClientId,
+  readKeepNotes,
+} from "@/lib/import/keep-api";
 import { parseCollection, ParseError } from "@/lib/import/parse";
 import type { ParsedCollection } from "@/lib/import/types";
 import { readZip } from "@/lib/import/zip";
@@ -51,6 +58,28 @@ export function UploadStep({
   const [source, setSource] = useState<"keep" | "docs">("keep");
   const [reading, setReading] = useState(false);
   const [error, setError] = useState<string>();
+  const [keepProgress, setKeepProgress] = useState<number | null>(null);
+  const [showTakeout, setShowTakeout] = useState(!keepApiClientId);
+
+  /** Straight from Keep: Google consent popup, read the notes, revoke. */
+  async function importFromKeep() {
+    setError(undefined);
+    setKeepProgress(0);
+    let token: string | null = null;
+    try {
+      token = await connectKeep();
+      const { entries, images } = await readKeepNotes(token, setKeepProgress);
+      if (!entries.length) throw new ParseError("no_notes");
+      onParsed("Google Keep", { format: "keep", entries }, images);
+    } catch (e) {
+      const code = e instanceof KeepApiError || e instanceof ParseError ? e.message : "failed";
+      setError(he.bulk.keepErrors[code] ?? he.bulk.errors[code] ?? he.bulk.keepErrors.failed);
+      if (code !== "popup_closed" && code !== "denied") setShowTakeout(true);
+      setKeepProgress(null);
+    } finally {
+      if (token) void disconnectKeep(token);
+    }
+  }
 
   async function read(file: File) {
     setReading(true);
@@ -126,24 +155,52 @@ export function UploadStep({
         </button>
       </div>
 
-      <ol className="flex flex-col gap-2 rounded-2xl bg-white p-4 ring-1 ring-rule">
-        {steps.map((step, i) => (
-          <li key={step} className="flex gap-3 text-base">
-            <span
-              aria-hidden="true"
-              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent"
+      {source === "keep" && keepApiClientId && (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={keepProgress !== null}
+            onClick={importFromKeep}
+            className="press h-12 rounded-full bg-accent text-base font-semibold text-white disabled:opacity-60"
+          >
+            {keepProgress !== null ? he.bulk.keepReading(keepProgress) : he.bulk.keepConnect}
+          </button>
+          <p className="text-sm text-muted">{he.bulk.keepConnectHint}</p>
+          {problem}
+          {!showTakeout && (
+            <button
+              type="button"
+              onClick={() => setShowTakeout(true)}
+              className="press h-11 self-start text-sm font-semibold text-accent"
             >
-              {i + 1}
-            </span>
-            <span className="pt-0.5">{step}</span>
-          </li>
-        ))}
-      </ol>
-      <p className="text-sm text-muted">
-        {source === "keep" ? he.bulk.keepNote : he.bulk.docsNote}
-      </p>
+              {he.bulk.keepOther}
+            </button>
+          )}
+        </div>
+      )}
 
-      {source === "keep" && (
+      {(source === "docs" || showTakeout) && (
+        <ol className="flex flex-col gap-2 rounded-2xl bg-white p-4 ring-1 ring-rule">
+          {steps.map((step, i) => (
+            <li key={step} className="flex gap-3 text-base">
+              <span
+                aria-hidden="true"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent"
+              >
+                {i + 1}
+              </span>
+              <span className="pt-0.5">{step}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {(source === "docs" || showTakeout) && (
+        <p className="text-sm text-muted">
+          {source === "keep" ? he.bulk.keepNote : he.bulk.docsNote}
+        </p>
+      )}
+
+      {source === "keep" && showTakeout && (
         <a
           href={TAKEOUT_KEEP}
           target="_blank"
@@ -153,8 +210,8 @@ export function UploadStep({
           {he.bulk.openTakeout} ↗
         </a>
       )}
-      {picker}
-      {problem}
+      {(source === "docs" || showTakeout) && picker}
+      {(source === "docs" || !keepApiClientId) && problem}
     </div>
   );
 }

@@ -94,8 +94,22 @@ export const he = {
       "מורידים את קובץ ה-ZIP (באייפון ובאייפד הוא נשמר באפליקציית ״קבצים״).",
       "חוזרים לכאן ובוחרים אותו.",
     ],
+    keepConnect: "ייבוא מ-Google Keep",
+    keepConnectHint:
+      "נפתח חלון של Google שמבקש רשות לקרוא את הפתקים (קריאה בלבד). הרשות משמשת רק לייבוא הזה.",
+    keepReading: (n: number) => (n ? `קוראים פתקים מ-Keep… ${n}` : "מתחברים ל-Google Keep…"),
+    keepOther: "דרך אחרת: ייצוא מ-Google Takeout",
+    keepErrors: {
+      not_configured: "הייבוא הישיר מ-Keep עוד לא הוגדר באתר הזה. אפשר לייבא דרך Google Takeout.",
+      popup_closed: "חלון ההתחברות נסגר. אפשר לנסות שוב.",
+      denied: "Google לא אישרה גישה ל-Keep. אפשר לנסות שוב ולאשר את הגישה.",
+      api_disabled: "ה-API של Google Keep כבוי בפרויקט של האתר. צריך להפעיל אותו ב-Google Cloud.",
+      personal_account:
+        "Google לא נותנת לאפליקציות לקרוא את Keep בחשבון הזה. אפשר לייבא דרך Google Takeout, למטה.",
+      failed: "לא הצלחנו לקרוא את Keep. אפשר לנסות שוב, או לייבא דרך Google Takeout.",
+    } as Record<string, string>,
     keepNote:
-      "Google לא מאפשרת לאפליקציות לקרוא את Keep ישירות בחשבון פרטי, לכן מייבאים דרך Google Takeout.",
+      "Google Takeout הוא הייצוא הרשמי של Google: מקבלים קובץ ZIP עם כל הפתקים, התוויות והתמונות.",
     openTakeout: "פתיחת Google Takeout",
     chooseZip: "בחירת קובץ ה-ZIP",
     docsSteps: [

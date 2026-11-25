@@ -121,22 +121,24 @@ export function ImportScreen() {
   else if (step.name === "review")
     body = (
       <>
-        {step.job.format === "keep" && imageCache.size === 0 && (
-          <UploadStep
-            reselect
-            onParsed={(_name, _parsed, images) => {
-              imageCache = images;
-              setStep({ ...step });
-            }}
-          />
-        )}
+        {step.job.format === "keep" &&
+          step.job.file_name !== "Google Keep" &&
+          imageCache.size === 0 && (
+            <UploadStep
+              reselect
+              onParsed={(_name, _parsed, images) => {
+                imageCache = images;
+                setStep({ ...step });
+              }}
+            />
+          )}
         <BatchReviewStep
           book={book!}
           jobId={step.job.id}
           results={step.results}
           library={library}
           images={imageCache}
-          imagesNeeded={step.job.format === "keep"}
+          imagesNeeded={step.job.format === "keep" && step.job.file_name !== "Google Keep"}
           onSaved={(count) => {
             imageCache = new Map();
             setStep({ name: "saved", count });
