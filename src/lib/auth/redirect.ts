@@ -10,7 +10,7 @@ export function safeNext(next: string | null | undefined): string {
   return next;
 }
 
-/** Pages a signed-out visitor may open: sign-in and the magic-link landing. */
+/** Pages a signed-out visitor may open: sign-in and the email-link pages. */
 export function isPublicPath(pathname: string): boolean {
   return pathname === "/login" || pathname.startsWith("/auth/");
 }

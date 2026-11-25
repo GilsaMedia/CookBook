@@ -186,7 +186,7 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -254,16 +254,16 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Hebrew sign-in emails. Each carries both a link and a 6-digit code: the
-# code is for the iPhone home-screen app, which doesn't share cookies with
-# the browser a tapped link opens in.
-[auth.email.template.magic_link]
-subject = "קוד הכניסה לספר המתכונים"
-content_path = "./supabase/templates/magic_link.html"
-
+# Hebrew emails (local only: the hosted free tier allows custom templates
+# only with your own SMTP). Email is used once, to verify the address at
+# sign-up, and again only to reset a forgotten password.
 [auth.email.template.confirmation]
-subject = "קוד הכניסה לספר המתכונים"
-content_path = "./supabase/templates/magic_link.html"
+subject = "אימות המייל לספר המתכונים"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "איפוס הסיסמה לספר המתכונים"
+content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -449,10 +449,13 @@ project_id = "zwldajllxkbbezezndpz"
 [remotes.production.auth]
 site_url = "https://gilsamedia.github.io/CookBook"
 
-# Keep the hosted default: one sign-in email per address per minute.
+# Keep the hosted default: one email per address per minute.
 # (Local tests use 1s so they can resend quickly.)
 [remotes.production.auth.email]
 max_frequency = "1m0s"
+# Hosted sign-ups verify the email once, with a link. (Local sign-ups skip
+# it so tests sign in at once.)
+enable_confirmations = true
 
 # Vector buckets are a local default the app doesn't use.
 [remotes.production.storage.vector]

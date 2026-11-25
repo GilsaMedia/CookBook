@@ -18,16 +18,13 @@ export function LoginScreen() {
     if (session) router.replace(next);
   }, [session, next, router]);
 
+  const notice =
+    params.get("error") === "link" ? { text: he.auth.errors.linkFailed, ok: false } : undefined;
+
   return (
     <div className="mx-auto flex max-w-sm flex-col gap-6 pt-12">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{he.auth.title}</h1>
-        <p className="text-base text-muted">{he.auth.intro}</p>
-      </div>
-      <LoginForm
-        next={next}
-        initialError={params.get("error") === "link" ? he.auth.errors.linkFailed : undefined}
-      />
+      <h1 className="text-2xl font-semibold">{he.auth.title}</h1>
+      <LoginForm next={next} notice={notice} />
     </div>
   );
 }

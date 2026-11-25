@@ -6,24 +6,26 @@ import { he } from "@/i18n/he";
 import { safeNext } from "@/lib/auth/redirect";
 import { supabase } from "@/lib/supabase/client";
 
-/** Magic-link landing: trades the link's one-time code for a session. */
+/**
+ * Where email links land (verifying the address at sign-up, resetting a
+ * password). The link carries the session in its #fragment; the Supabase
+ * client reads it when it starts, so this page only waits for that and
+ * moves on. A used or expired link comes back with an error instead.
+ */
 export function Callback() {
   const params = useSearchParams();
   const router = useRouter();
   const started = useRef(false);
 
   useEffect(() => {
-    // Strict Mode runs effects twice in development; a code works once.
     if (started.current) return;
     started.current = true;
-    const code = params.get("code");
     const next = safeNext(params.get("next"));
     const fail = () => router.replace("/login?error=link");
-    if (!code) return fail();
     supabase()
-      .auth.exchangeCodeForSession(code)
-      .then(({ error }) => (error ? fail() : router.replace(next)), fail);
+      .auth.getSession()
+      .then(({ data }) => (data.session ? router.replace(next) : fail()), fail);
   }, [params, router]);
 
-  return <p className="pt-12 text-center text-muted">{he.auth.verifying}</p>;
+  return <p className="pt-12 text-center text-muted">{he.auth.working}</p>;
 }

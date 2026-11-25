@@ -9,18 +9,20 @@ let client: SupabaseClient<Database> | undefined;
  * so the session lives in localStorage and every query runs as the signed-in
  * user; Row-Level Security in the database decides what they can see.
  *
- * PKCE keeps magic links safe: the link's code only works in the browser
- * that asked for it. `/auth/callback` exchanges it explicitly.
+ * Sign-in is email + password. Email links (verifying the address once at
+ * sign-up, resetting a password) use the implicit flow: the link carries the
+ * session itself, so it works whichever browser opens it (Gmail's in-app
+ * browser, a new tab), unlike PKCE, which needs the browser that asked.
  */
 export function supabase(): SupabaseClient<Database> {
   if (!client) {
     const { url, key } = supabaseEnv();
     client = createClient<Database>(url, key, {
       auth: {
-        flowType: "pkce",
+        flowType: "implicit",
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
+        detectSessionInUrl: true,
       },
     });
   }
