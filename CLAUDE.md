@@ -51,13 +51,13 @@ Family cookbook PWA. Hebrew-first, RTL. Any family can sign up and own a private
 - **Provider: the owner's Claude subscription through headless Claude Code**, the same setup as the owner's WhatBrendonThinks API. Run `claude setup-token` on the server, set `CLAUDE_CODE_OAUTH_TOKEN`, and the server runs `claude -p` with JSON output, no tools beyond what the task needs, no MCP servers and no saved session. Usage counts against the subscription's limits.
   - Fallback: with no token, use the Anthropic API with `ANTHROPIC_API_KEY`. `AI_PROVIDER=claude-code|anthropic` overrides the choice.
   - A subscription may only serve the owner's own use. Before other families can sign up (PLAN "Before opening sign-ups"), switch to `ANTHROPIC_API_KEY`.
-  - All AI goes through one module (`src/lib/ai/`, from Prompt 4) so the provider can change in one place.
-- **AI runs on the owner's server, never on GitHub Pages.** Pages is public and static, so it holds no secrets. The token lives only in the server's untracked env file (e.g. on the owner's Mac behind Tailscale, like WhatBrendonThinks).
+  - The app calls AI only through the `ai` Edge Function (`supabase/functions/ai`), which forwards approved requests to the AI server (`ai-server/`). Add new AI jobs to both task lists (`ai-server/tasks.mjs` and the function's `TASKS`), each with a size limit and a JSON Schema for the answer.
+- **AI runs on the owner's server, never on GitHub Pages.** Pages is public and static, so it holds no secrets. The server is `gilsa` (the owner's Linux machine, which also runs WhatBrendonThinks): `ai-server/` runs there as the `cookbook-ai` user service on 127.0.0.1:8810, exposed only through Tailscale Funnel on port 10000. Its token and the shared `AI_SERVER_SECRET` live in `~/apps/cookbook-ai/.env` (mode 600); the Edge Function holds `AI_SERVER_URL` and `AI_SERVER_SECRET` as Supabase secrets. Rotate the token with `~/apps/cookbook-ai/set-claude-token.sh`.
 - **Only approved family books may use the AI.** Sign-up is open to any family, and the owner's subscription must not become a free AI for strangers. Every AI request must pass all of these checks on the server, before any model call:
   1. A valid Supabase session: verify the user's JWT on every request. Never trust a user id or book id sent by the client.
   2. The user is a non-revoked `owner` or `contributor` of the book the request is for. Viewers can't call AI.
-  3. That book is AI-enabled. Only the server owner can turn this on, with the service role or SQL; it's never writable from the app or by RLS-authenticated users.
-  4. Per-user and per-book daily caps, plus size limits on input (URL fetch ≤ 2 MB, pasted text capped). Count usage in the database without storing prompts or page contents.
+  3. That book is AI-enabled: it has a row in `public.ai_access`. Only the server owner can add one, with the service role or SQL; app users have no grants on it.
+  4. Per-user and per-book daily caps (`public.ai_take_quota` checks 1–4 and counts the call in one transaction), plus size limits on input (URL fetch ≤ 2 MB, pasted text ≤ 20,000 characters). Usage is counted in `public.ai_usage` without storing prompts or page contents.
   5. CORS allows only the app's own origins (the Pages site and localhost).
 - Refuse anything else with a friendly Hebrew message. Never fall back to calling the model without these checks, even in development builds.
 - **Model names come from env vars** (e.g. `AI_MODEL_EXTRACT`, `AI_MODEL_FAST`). Never hard-code them.
