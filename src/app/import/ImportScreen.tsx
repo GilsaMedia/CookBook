@@ -123,6 +123,7 @@ export function ImportScreen() {
       <>
         {step.job.format === "keep" && imageCache.size === 0 && (
           <UploadStep
+            reselect
             onParsed={(_name, _parsed, images) => {
               imageCache = images;
               setStep({ ...step });

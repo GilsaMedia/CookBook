@@ -83,9 +83,28 @@ export const he = {
   bulk: {
     entry: "ייבוא אוסף שלם (Word או Google Keep)",
     title: "ייבוא אוסף מתכונים",
-    intro:
-      "מעלים קובץ אחד ומקבלים את כל המתכונים. מ-Google Docs: קובץ ← הורדה ← Microsoft Word (.docx). מ-Google Keep: קובץ ה-ZIP מ-Google Takeout.",
-    choose: "בחירת קובץ",
+    intro: "מעלים קובץ אחד ומקבלים את כל המתכונים.",
+    sourceLabel: "מאיפה המתכונים",
+    fromKeep: "Google Keep",
+    fromDocs: "Google Docs / Word",
+    keepSteps: [
+      "פותחים את Google Takeout (הכפתור למטה). רק Keep כבר מסומן.",
+      "לוחצים ״השלב הבא״ ואז ״יצירת ייצוא״.",
+      "Google שולח מייל עם קישור להורדה, בדרך כלל תוך כמה דקות.",
+      "מורידים את קובץ ה-ZIP (באייפון ובאייפד הוא נשמר באפליקציית ״קבצים״).",
+      "חוזרים לכאן ובוחרים אותו.",
+    ],
+    keepNote:
+      "Google לא מאפשרת לאפליקציות לקרוא את Keep ישירות בחשבון פרטי, לכן מייבאים דרך Google Takeout.",
+    openTakeout: "פתיחת Google Takeout",
+    chooseZip: "בחירת קובץ ה-ZIP",
+    docsSteps: [
+      "פותחים את המסמך ב-Google Docs.",
+      "קובץ ← הורדה ← Microsoft Word (.docx).",
+      "חוזרים לכאן ובוחרים את הקובץ.",
+    ],
+    docsNote: "כל קטגוריה צריכה כותרת (״כותרת 1״) וכל מתכון כותרת מתחתיה (״כותרת 2״).",
+    chooseDocx: "בחירת קובץ Word",
     reading: "קוראים את הקובץ…",
     errors: {
       pdf: "קובץ PDF מאבד את הכותרות של המסמך. כדאי להוריד את המסמך כ-Word (.docx) ולהעלות אותו.",
@@ -128,6 +147,7 @@ export const he = {
     failedHint: "אפשר להוסיף אותם אחר כך בלשונית ״הוספה״.",
     noPhotos: (n: number) => `${n} מתכונים בלי תמונה. צלמי בבישול הבא 📸`,
     reselect: "כדי לצרף את התמונות מ-Keep, בחרו שוב את אותו קובץ ZIP.",
+    choose: "בחירת קובץ",
     save: (n: number) => `שמירת ${n} מתכונים`,
     saving: (done: number, total: number) => `שומרים… ${done}/${total}`,
     saved: (n: number) => `נשמרו ${n} מתכונים.`,
