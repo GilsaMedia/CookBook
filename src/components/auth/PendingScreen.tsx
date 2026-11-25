@@ -21,7 +21,10 @@ export function PendingScreen({
 
   useEffect(() => {
     // Never over what they've already typed.
-    getMyName().then((saved) => setName((typed) => typed || saved), () => {});
+    getMyName().then(
+      (saved) => setName((typed) => typed || saved),
+      () => {},
+    );
   }, []);
 
   async function save(e: FormEvent) {
