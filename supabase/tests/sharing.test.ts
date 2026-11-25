@@ -53,9 +53,10 @@ beforeAll(async () => {
         category_id: cats!.id,
         tags: ["משפחתי"],
       },
-      { book_id: gil.bookId, title: "עוגת שמרים", status: "approved" },
-      { book_id: gil.bookId, title: "טיוטה", status: "pending" },
+      { book_id: gil.bookId, title: "עוגת שמרים", status: "approved", category_id: null, tags: [] },
+      { book_id: gil.bookId, title: "טיוטה", status: "pending", category_id: null, tags: [] },
     ])
+    // Rows missing a column would send null for it; tags can't be null.
     .select("id, title");
   soup = recipes!.find((r) => r.title === "מרק עדשים")!.id;
   cake = recipes!.find((r) => r.title === "עוגת שמרים")!.id;

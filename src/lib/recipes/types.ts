@@ -44,10 +44,7 @@ export type RecipeStep = {
 export type ImageCredit = { author: string; license: string; sourceUrl: string };
 
 /** Everything the recipe page shows. */
-export type RecipeDetail = Omit<
-  RecipeCard,
-  "searchText" | "ingredientNames" | "sourceUrl"
-> & {
+export type RecipeDetail = Omit<RecipeCard, "searchText" | "ingredientNames" | "sourceUrl"> & {
   imageCredit: ImageCredit | null;
   sourceName: string | null;
   sourceUrl: string | null;
