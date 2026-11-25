@@ -8,7 +8,7 @@ import path from "node:path";
 const require = createRequire(import.meta.url);
 const from = path.join(
   path.dirname(require.resolve("pdfjs-dist/package.json")),
-  "build/pdf.worker.min.mjs",
+  "legacy/build/pdf.worker.min.mjs",
 );
 mkdirSync("public", { recursive: true });
 copyFileSync(from, "public/pdf.worker.min.mjs");

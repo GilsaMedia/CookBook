@@ -81,7 +81,9 @@ export function linesFromItems(items: PdfItem[]): string[] {
 
 /** Every page's lines. Throws ParseError-compatible "pdf_empty" for scanned PDFs. */
 export async function readPdfLines(bytes: Uint8Array): Promise<string[]> {
-  const pdfjs = await import("pdfjs-dist");
+  // The legacy build runs on older Safari and Chrome too (the modern one needs
+  // the newest browsers).
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = withBase("/pdf.worker.min.mjs");
   const doc = await pdfjs.getDocument({ data: bytes }).promise;
   const lines: string[] = [];
