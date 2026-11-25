@@ -16,6 +16,10 @@ export type SentShare = {
   status: "pending" | "accepted" | "declined";
   addedCount: number;
   createdAt: string;
+  /** An invitation into the book itself. */
+  canAdd: boolean;
+  /** Took the whole book: gets every recipe added later too. */
+  follow: boolean;
 };
 
 export type IncomingShare = {
@@ -23,6 +27,8 @@ export type IncomingShare = {
   senderName: string;
   recipeCount: number | null;
   createdAt: string;
+  canAdd: boolean;
+  fromBookId: string;
 };
 
 export type SharedRecipe = { id: string; title: string; category: string | null };
@@ -67,6 +73,8 @@ export async function shareRecipes(input: {
   emails: string[];
   recipeIds: string[] | null;
   senderName: string;
+  /** Invite them into the book itself (whole book only). */
+  canAdd?: boolean;
 }): Promise<void> {
   const db = supabase();
   const user = await me();
@@ -80,6 +88,7 @@ export async function shareRecipes(input: {
     sender_name: name,
     to_email,
     recipe_ids: input.recipeIds,
+    can_add: input.recipeIds === null && !!input.canAdd,
   }));
   const { error } = await db.from("shares").insert(rows);
   if (error) throw new ShareError(code(error.message));
@@ -90,7 +99,7 @@ export async function sentShares(bookId: string): Promise<SentShare[]> {
   const user = await me();
   const { data, error } = await supabase()
     .from("shares")
-    .select("id, to_email, recipe_ids, status, added_count, created_at")
+    .select("id, to_email, recipe_ids, status, added_count, created_at, can_add, follow")
     .eq("from_book_id", bookId)
     .eq("from_user", user?.id ?? "")
     .order("created_at", { ascending: false })
@@ -103,7 +112,15 @@ export async function sentShares(bookId: string): Promise<SentShare[]> {
     status: s.status,
     addedCount: s.added_count,
     createdAt: s.created_at,
+    canAdd: s.can_add,
+    follow: s.follow,
   }));
+}
+
+/** Stops a whole-book share's automatic updates (either side may). */
+export async function stopUpdates(id: string) {
+  const { error } = await supabase().rpc("stop_share_updates", { p_share: id });
+  if (error) throw new ShareError("default");
 }
 
 /** Takes back a share nobody has answered yet. */
@@ -118,7 +135,7 @@ export async function incomingShares(): Promise<IncomingShare[]> {
   if (!user?.email) return [];
   const { data, error } = await supabase()
     .from("shares")
-    .select("id, sender_name, recipe_ids, created_at")
+    .select("id, sender_name, recipe_ids, created_at, can_add, from_book_id")
     .eq("to_email", normalizeEmail(user.email))
     .eq("status", "pending")
     .order("created_at");
@@ -128,6 +145,8 @@ export async function incomingShares(): Promise<IncomingShare[]> {
     senderName: s.sender_name,
     recipeCount: s.recipe_ids?.length ?? null,
     createdAt: s.created_at,
+    canAdd: s.can_add,
+    fromBookId: s.from_book_id,
   }));
 }
 
@@ -143,21 +162,42 @@ export async function declineShare(id: string) {
   if (error) throw new ShareError("default");
 }
 
-/** Copies the chosen recipes into the user's book; resolves with how many. */
-export async function acceptShare(id: string, recipeIds: string[]): Promise<number> {
+/**
+ * Accepts a share: copies the chosen recipes into one of the user's own
+ * books (all of them, and every one added later, when recipeIds is null),
+ * or for an invitation, joins the sharer's book. Resolves with how many
+ * recipes were copied.
+ */
+export async function acceptShare(
+  id: string,
+  recipeIds: string[] | null,
+  bookId?: string,
+): Promise<number> {
   const { data, error } = await supabase().rpc("accept_share", {
     p_share: id,
-    p_recipe_ids: recipeIds,
+    ...(recipeIds ? { p_recipe_ids: recipeIds } : {}),
+    ...(bookId ? { p_book: bookId } : {}),
   });
   if (error) throw new ShareError(code(error.message));
   return data;
 }
 
 /**
+ * Brings followed books up to date: recipes their owners added since are
+ * copied in (with their photos). Resolves with who added how many.
+ */
+export async function syncSharedBooks(): Promise<{ senderName: string; added: number }[]> {
+  const { data, error } = await supabase().rpc("sync_shared_books");
+  if (error || !data?.length) return [];
+  for (const row of data) await copySharedPhotos(row.share_id);
+  return data.map((r) => ({ senderName: r.sender_name, added: r.added }));
+}
+
+/**
  * Copies the accepted recipes' photos into the user's book. Storage copies
  * on the server (nothing is downloaded); the originals stay readable only
- * until each recipe is marked done. Best effort: a photo that fails is
- * skipped.
+ * until each recipe is marked done. A recipe without photos yet stays open,
+ * so photos its owner adds a little later still follow. Best effort.
  */
 export async function copySharedPhotos(
   shareId: string,
@@ -172,6 +212,7 @@ export async function copySharedPhotos(
   const groups = [...byRecipe.entries()];
   let done = 0;
   const copyOne = async ([fromId, rows]: (typeof groups)[number]) => {
+    const hasPhotos = rows.some((r) => r.storage_path);
     for (const row of rows) {
       if (!row.storage_path) continue;
       const ext = row.storage_path.split(".").pop() ?? "jpg";
@@ -188,7 +229,8 @@ export async function copySharedPhotos(
       });
       if (rowError) await db.storage.from("recipe-images").remove([path]);
     }
-    await db.rpc("share_photos_done", { p_share: shareId, p_from_recipe_ids: [fromId] });
+    if (hasPhotos)
+      await db.rpc("share_photos_done", { p_share: shareId, p_from_recipe_ids: [fromId] });
     onProgress?.(++done, groups.length);
   };
   for (let i = 0; i < groups.length; i += 4) await Promise.all(groups.slice(i, i + 4).map(copyOne));

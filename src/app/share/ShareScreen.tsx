@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
 import { getCurrentBook, type CurrentBook } from "@/lib/data/book";
+import { bookMembers, removeMember, type BookMember } from "@/lib/data/books";
 import { withBase, isDemo } from "@/lib/demo";
 import {
   getMyName,
@@ -13,6 +14,7 @@ import {
   sentShares,
   ShareError,
   shareRecipes,
+  stopUpdates,
   withdrawShare,
   type SentShare,
 } from "@/lib/data/sharing";
@@ -31,6 +33,7 @@ type Loaded = {
   recipes: RecipeCard[];
   name: string;
   sent: SentShare[];
+  members: BookMember[];
 };
 
 /**
@@ -48,12 +51,14 @@ export function ShareScreen() {
       try {
         const book = await getCurrentBook();
         if (!book) return setFailed(true);
-        const [library, name, sent] = await Promise.all([
+        const owner = book.role === "owner";
+        const [library, name, sent, members] = await Promise.all([
           getLibrary(),
           getMyName(),
-          book.role === "owner" ? sentShares(book.id) : Promise.resolve([]),
+          owner ? sentShares(book.id) : Promise.resolve([]),
+          owner ? bookMembers(book.id) : Promise.resolve([]),
         ]);
-        setLoaded({ book, recipes: library.recipes, name, sent });
+        setLoaded({ book, recipes: library.recipes, name, sent, members });
       } catch {
         setFailed(true);
       }
@@ -86,6 +91,8 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
   const [emailInput, setEmailInput] = useState("");
   const [name, setName] = useState(loaded.name);
   const [sent, setSent] = useState(loaded.sent);
+  const [members, setMembers] = useState(loaded.members);
+  const [canAdd, setCanAdd] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<string[] | null>(null);
@@ -126,6 +133,7 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
         emails: people,
         recipeIds: mode === "book" ? null : [...selected],
         senderName: name,
+        canAdd: mode === "book" && canAdd,
       });
       setDone(people);
       setEmails([]);
@@ -136,6 +144,24 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
       setError(he.share.errors[code] ?? he.share.errors.default);
     } finally {
       setPending(false);
+    }
+  }
+
+  async function stop(id: string) {
+    try {
+      await stopUpdates(id);
+      setSent(sent.map((s) => (s.id === id ? { ...s, follow: false } : s)));
+    } catch {
+      setError(he.share.errors.default);
+    }
+  }
+
+  async function remove(userId: string) {
+    try {
+      await removeMember(book.id, userId);
+      setMembers(members.filter((m) => m.userId !== userId));
+    } catch {
+      setError(he.share.errors.default);
     }
   }
 
@@ -159,12 +185,24 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
                 {s.toEmail}
               </span>
               <span className="text-muted">
-                {he.share.sentWhat(s.recipeCount)} ·{" "}
+                {s.canAdd ? he.share.sentJoin : he.share.sentWhat(s.recipeCount)} ·{" "}
                 {s.status === "accepted"
-                  ? he.share.status.accepted(s.addedCount)
+                  ? s.canAdd
+                    ? he.share.joined
+                    : he.share.status.accepted(s.addedCount)
                   : he.share.status[s.status]}
+                {s.follow && ` · ${he.share.following}`}
               </span>
             </div>
+            {s.follow && (
+              <button
+                type="button"
+                onClick={() => stop(s.id)}
+                className="press h-11 px-2 font-semibold text-muted"
+              >
+                {he.share.stopUpdates}
+              </button>
+            )}
             {s.status === "pending" && (
               <button
                 type="button"
@@ -174,6 +212,32 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
                 {he.share.withdraw}
               </button>
             )}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
+  const membersList = members.length > 0 && (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-lg font-bold">{he.share.membersTitle}</h2>
+      <p className="text-sm text-muted">{he.share.membersHint}</p>
+      <ul className="flex flex-col divide-y divide-rule rounded-2xl bg-white ring-1 ring-rule">
+        {members.map((m) => (
+          <li key={m.userId} className="flex items-center gap-3 px-4 py-3 text-sm">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="font-medium">{m.name}</span>
+              <span className="truncate text-muted" dir="ltr">
+                {m.email}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => remove(m.userId)}
+              className="press h-11 px-2 font-semibold text-red-700"
+            >
+              {he.share.removeMember}
+            </button>
           </li>
         ))}
       </ul>
@@ -210,6 +274,7 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
             {he.share.again}
           </button>
         </section>
+        {membersList}
         {sentList}
       </div>
     );
@@ -237,6 +302,23 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
             {he.share.chosen(selected.size)}
           </button>
         </div>
+        {mode === "book" && (
+          <div className="flex flex-col gap-2">
+            <label className="flex min-h-11 items-start gap-3">
+              <input
+                type="checkbox"
+                checked={canAdd}
+                onChange={(e) => setCanAdd(e.target.checked)}
+                className="mt-0.5 size-5 shrink-0 accent-accent"
+              />
+              <span className="flex flex-col gap-1">
+                <span className="font-semibold">{he.share.canAdd}</span>
+                <span className="text-sm text-muted">{he.share.canAddHint}</span>
+              </span>
+            </label>
+            {!canAdd && <p className="text-sm text-muted">{he.share.followNote}</p>}
+          </div>
+        )}
         {mode === "chosen" && (
           <div className="flex flex-col gap-2">
             <input
@@ -378,6 +460,7 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
                 (isEmail(emailInput) && !emails.includes(normalizeEmail(emailInput)) ? 1 : 0) || 1,
             )}
       </button>
+      {membersList}
       {sentList}
     </div>
   );

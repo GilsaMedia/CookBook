@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import type { Exclusion, ImageCredit, Library, RecipeDetail } from "@/lib/recipes/types";
 import { assembleLibrary, assembleRecipe } from "./assemble";
+import { pickMembership } from "./current-book";
 
 const IMAGE_BUCKET = "recipe-images";
 // Signed image links last an hour; screens reload data when opened.
@@ -23,8 +24,14 @@ async function currentBook(db: Db) {
     .is("revoked_at", null)
     .order("created_at");
   if (error) throw error;
-  const membership = data.find((m) => m.role === "owner") ?? data[0];
-  return membership ? { id: membership.book_id, name: membership.books?.name ?? null } : null;
+  const membership = pickMembership(data);
+  return membership
+    ? {
+        id: membership.book_id,
+        name: membership.books?.name ?? null,
+        isOwner: membership.role === "owner",
+      }
+    : null;
 }
 
 async function exclusions(db: Db, bookId: string): Promise<Exclusion[]> {
@@ -102,7 +109,7 @@ export async function supabaseLibrary(): Promise<Library> {
   ]);
   for (const r of [categories, recipes, ingredients]) if (r.error) throw r.error;
 
-  return assembleLibrary({
+  const library = assembleLibrary({
     bookName: book.name,
     categories: categories.data ?? [],
     recipes: recipes.data ?? [],
@@ -110,6 +117,7 @@ export async function supabaseLibrary(): Promise<Library> {
     exclusions: rules,
     images: images.urls,
   });
+  return { ...library, bookId: book.id, isOwner: book.isOwner };
 }
 
 /** One recipe, or null when it doesn't exist or RLS hides it. */

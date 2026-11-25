@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import type { ImportedRecipe } from "@/lib/ai/schema";
+import { pickMembership } from "./current-book";
 
 type Role = Database["public"]["Enums"]["member_role"];
 
@@ -8,19 +9,21 @@ export type CurrentBook = {
   id: string;
   name: string;
   role: Role;
+  /** A contributor the owner trusts: their recipes go straight in. */
+  canPublish: boolean;
   categories: { id: string; name: string }[];
 };
 
-/** The book the user works in: the one they own, else their first invite. */
+/** The book the user works in: the one chosen on this device, else their own. */
 export async function getCurrentBook(): Promise<CurrentBook | null> {
   const db = supabase();
   const { data, error } = await db
     .from("book_members")
-    .select("book_id, role, books(name)")
+    .select("book_id, role, can_publish, books(name)")
     .is("revoked_at", null)
     .order("created_at");
   if (error) throw error;
-  const m = data.find((x) => x.role === "owner") ?? data[0];
+  const m = pickMembership(data);
   if (!m) return null;
   const { data: categories, error: cErr } = await db
     .from("categories")
@@ -32,6 +35,7 @@ export async function getCurrentBook(): Promise<CurrentBook | null> {
     id: m.book_id,
     name: m.books?.name ?? "",
     role: m.role,
+    canPublish: m.can_publish,
     categories: categories.map((c) => ({ id: c.id, name: c.name })),
   };
 }
@@ -57,7 +61,7 @@ export async function saveRecipe(book: CurrentBook, d: RecipeDraft): Promise<str
       book_id: book.id,
       category_id: d.categoryId,
       title: d.title.trim(),
-      status: book.role === "owner" ? "approved" : "pending",
+      status: book.role === "owner" || book.canPublish ? "approved" : "pending",
       source_url: d.sourceUrl,
       source_name: d.sourceName,
       servings: d.servings,
