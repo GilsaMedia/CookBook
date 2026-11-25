@@ -100,7 +100,7 @@ begin
        or new.status = 'cancelled'
        or (old.status = 'ready' and new.status = 'imported')
        or (old.status in ('ready', 'imported') and new.status = 'queued'
-           and current_setting('cookbook.import_retry', true) = 'on')
+           and coalesce(current_setting('cookbook.import_retry', true), '') = 'on')
      ) then
     raise exception 'bad_status_change' using errcode = 'P0001';
   end if;
