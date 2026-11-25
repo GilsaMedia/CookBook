@@ -1,6 +1,11 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.18";
+  };
   graphql_public: {
     Tables: {
       [_ in never]: never;
@@ -10,7 +15,12 @@ export type Database = {
     };
     Functions: {
       graphql: {
-        Args: { extensions?: Json; operationName?: string; query?: string; variables?: Json };
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
         Returns: Json;
       };
     };
@@ -23,6 +33,71 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_access: {
+        Row: {
+          book_id: string;
+          created_at: string;
+          daily_book_limit: number;
+          daily_user_limit: number;
+        };
+        Insert: {
+          book_id: string;
+          created_at?: string;
+          daily_book_limit?: number;
+          daily_user_limit?: number;
+        };
+        Update: {
+          book_id?: string;
+          created_at?: string;
+          daily_book_limit?: number;
+          daily_user_limit?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_access_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: true;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ai_usage: {
+        Row: {
+          book_id: string;
+          calls: number;
+          day: string;
+          user_id: string;
+        };
+        Insert: {
+          book_id: string;
+          calls?: number;
+          day?: string;
+          user_id: string;
+        };
+        Update: {
+          book_id?: string;
+          calls?: number;
+          day?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ai_usage_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       book_members: {
         Row: {
           book_id: string;
@@ -32,7 +107,6 @@ export type Database = {
           role: Database["public"]["Enums"]["member_role"];
           user_id: string;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           created_at?: string;
@@ -79,7 +153,6 @@ export type Database = {
           id: string;
           name: string;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           id?: string;
@@ -100,7 +173,6 @@ export type Database = {
           name: string;
           position: number;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           created_at?: string;
@@ -139,7 +211,6 @@ export type Database = {
           section: Database["public"]["Enums"]["ingredient_section"];
           unit: Database["public"]["Enums"]["ingredient_unit"] | null;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           canonical_name?: string | null;
@@ -189,7 +260,6 @@ export type Database = {
           role: Database["public"]["Enums"]["member_role"];
           token_hash: string;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           consumed_at?: string | null;
@@ -248,7 +318,6 @@ export type Database = {
           recipe_id: string | null;
           scope: Database["public"]["Enums"]["preference_scope"];
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           category_id?: string | null;
@@ -298,7 +367,6 @@ export type Database = {
           email: string | null;
           id: string;
         };
-        ComputedFields: never;
         Insert: {
           created_at?: string;
           display_name?: string | null;
@@ -322,7 +390,6 @@ export type Database = {
           recipe_id: string;
           storage_path: string;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           created_at?: string;
@@ -373,7 +440,6 @@ export type Database = {
           uses_oven: boolean;
           uses_stovetop: boolean;
         };
-        ComputedFields: never;
         Insert: {
           active_minutes?: number | null;
           book_id: string;
@@ -453,7 +519,6 @@ export type Database = {
           recipe_id: string;
           text: string;
         };
-        ComputedFields: never;
         Insert: {
           book_id: string;
           created_at?: string;
@@ -485,6 +550,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      ai_take_quota: {
+        Args: { p_book: string; p_user: string };
+        Returns: string;
+      };
       keepalive: { Args: never; Returns: string };
       normalize_hebrew: { Args: { input: string }; Returns: string };
     };
@@ -528,7 +597,9 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R;
@@ -551,7 +622,9 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
     }
@@ -573,7 +646,9 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
     }
@@ -595,7 +670,9 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
@@ -609,7 +686,9 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
