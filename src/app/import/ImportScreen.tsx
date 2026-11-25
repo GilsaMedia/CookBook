@@ -16,6 +16,7 @@ import {
   loadResults,
   retryImport,
   startImport,
+  startPhotoSearch,
   type ImportJob,
   type ImportResult,
 } from "@/lib/data/imports";
@@ -30,7 +31,8 @@ type Step =
   | { name: "map"; fileName: string; parsed: ParsedCollection }
   | { name: "progress"; job: ImportJob }
   | { name: "review"; job: ImportJob; results: ImportResult[] }
-  | { name: "saved"; count: number };
+  | { name: "saved"; count: number }
+  | { name: "photosDone"; found: number; missing: number };
 
 /** Bulk import (PRD §7.3): document → mapping → progress → batch review → saved. */
 export function ImportScreen() {
@@ -62,8 +64,18 @@ export function ImportScreen() {
   }, []);
 
   const onReady = useCallback(async (job: ImportJob) => {
+    if (job.format === "photos")
+      return setStep({ name: "photosDone", found: job.done, missing: job.failed });
     setStep({ name: "review", job, results: await loadResults(job.id) });
   }, []);
+
+  const withoutPhoto = library.filter((r) => !r.imageUrl).map((r) => r.id);
+
+  async function findPhotos() {
+    if (!book) return;
+    const job = await startPhotoSearch(book, withoutPhoto);
+    setStep({ name: "progress", job });
+  }
 
   /** Sends a job's unread recipes through the AI again. */
   async function retry(jobId: string) {
@@ -110,6 +122,9 @@ export function ImportScreen() {
           bookId={book!.id}
           onParsed={(fileName, parsed) => setStep({ name: "map", fileName, parsed })}
         />
+        {withoutPhoto.length > 0 && (
+          <PhotosSection count={withoutPhoto.length} onStart={findPhotos} />
+        )}
       </div>
     );
   else if (step.name === "map")
@@ -145,7 +160,11 @@ export function ImportScreen() {
   else
     body = (
       <div className="flex flex-col gap-4">
-        <p className="text-lg font-semibold">{he.bulk.saved(step.count)}</p>
+        <p className="text-lg font-semibold">
+          {step.name === "photosDone"
+            ? he.bulk.photosDone(step.found, step.missing)
+            : he.bulk.saved(step.count)}
+        </p>
         <Link
           href="/"
           className="press flex h-12 items-center justify-center rounded-full bg-accent font-semibold text-white"
@@ -199,6 +218,43 @@ function RetryBanner({
         className="press h-11 rounded-full bg-accent text-sm font-semibold text-white disabled:opacity-60"
       >
         {pending ? he.bulk.retrying : he.bulk.retryNow}
+      </button>
+      {error && (
+        <p role="alert" className="text-sm font-medium text-red-700">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** Recipes without a photo: Claude finds them one on the web. */
+function PhotosSection({ count, onStart }: { count: number; onStart: () => Promise<void> }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string>();
+  async function go() {
+    setPending(true);
+    setError(undefined);
+    try {
+      await onStart();
+    } catch (e) {
+      const code = e instanceof ImportStartError ? e.message : "default";
+      setError(he.bulk.errors[code] ?? he.bulk.errors.default);
+      setPending(false);
+    }
+  }
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule">
+      <h2 className="text-lg font-bold">{he.bulk.photosTitle}</h2>
+      <p>{he.bulk.photosMissing(count)}</p>
+      <p className="text-sm text-muted">{he.bulk.photosNote}</p>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={go}
+        className="press h-11 rounded-full bg-accent text-sm font-semibold text-white disabled:opacity-60"
+      >
+        {he.bulk.photosStart}
       </button>
       {error && (
         <p role="alert" className="text-sm font-medium text-red-700">

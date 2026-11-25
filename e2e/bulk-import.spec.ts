@@ -59,7 +59,7 @@ async function actAsWorker(expected: number) {
         });
       } else {
         const ingredients = title.startsWith("מוסקה")
-          ? ["חציל", "בשר טחון", "עגבנייה"]
+          ? ["חציל", "בשר טחון", "עגבנייה", "בצל"] // the same recipe twice in the file
           : ["עדשים כתומות", "בצל", "גזר"];
         await admin.rpc("finish_import_item", {
           p_id: item.id,

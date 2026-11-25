@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
-import type { Exclusion, Library, RecipeDetail } from "@/lib/recipes/types";
+import type { Exclusion, ImageCredit, Library, RecipeDetail } from "@/lib/recipes/types";
 import { assembleLibrary, assembleRecipe } from "./assemble";
 
 const IMAGE_BUCKET = "recipe-images";
@@ -41,11 +41,14 @@ async function exclusions(db: Db, bookId: string): Promise<Exclusion[]> {
   }));
 }
 
-/** Signed URLs for each recipe's first image. Images are private (PRD §11). */
+/**
+ * Signed URLs for each recipe's first image (images are private, PRD §11),
+ * and the credit of a photo that came from the web.
+ */
 async function firstImages(db: Db, bookId: string, recipeIds?: string[]) {
   let query = db
     .from("recipe_images")
-    .select("recipe_id, storage_path")
+    .select("recipe_id, storage_path, credit_name, credit_url")
     .eq("book_id", bookId)
     .order("position");
   if (recipeIds) query = query.in("recipe_id", recipeIds);
@@ -53,9 +56,19 @@ async function firstImages(db: Db, bookId: string, recipeIds?: string[]) {
   if (error) throw error;
 
   const first = new Map<string, string>();
-  for (const img of data) if (!first.has(img.recipe_id)) first.set(img.recipe_id, img.storage_path);
   const urls = new Map<string, string>();
-  if (first.size === 0) return urls;
+  const credits = new Map<string, ImageCredit>();
+  for (const img of data) {
+    if (first.has(img.recipe_id)) continue;
+    first.set(img.recipe_id, img.storage_path);
+    if (img.credit_name && img.credit_url)
+      credits.set(img.recipe_id, {
+        author: img.credit_name,
+        license: "",
+        sourceUrl: img.credit_url,
+      });
+  }
+  if (first.size === 0) return { urls, credits };
 
   const { data: signed } = await db.storage
     .from(IMAGE_BUCKET)
@@ -65,7 +78,7 @@ async function firstImages(db: Db, bookId: string, recipeIds?: string[]) {
     const url = byPath.get(path);
     if (url) urls.set(recipeId, url);
   }
-  return urls;
+  return { urls, credits };
 }
 
 const RECIPE_COLUMNS =
@@ -95,7 +108,7 @@ export async function supabaseLibrary(): Promise<Library> {
     recipes: recipes.data ?? [],
     ingredients: ingredients.data ?? [],
     exclusions: rules,
-    images,
+    images: images.urls,
   });
 }
 
@@ -128,6 +141,7 @@ export async function supabaseRecipe(id: string): Promise<RecipeDetail | null> {
     ingredients: ingredients.data ?? [],
     steps: steps.data ?? [],
     exclusions: rules,
-    imageUrl: images.get(id) ?? null,
+    imageUrl: images.urls.get(id) ?? null,
+    imageCredit: images.credits.get(id) ?? null,
   });
 }

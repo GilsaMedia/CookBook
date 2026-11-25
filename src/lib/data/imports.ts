@@ -1,4 +1,5 @@
 import { importedRecipeSchema, type ImportedRecipe } from "@/lib/ai/schema";
+import { NAVIGATION } from "@/lib/import/document";
 import type { ImportEntry, ParsedCollection } from "@/lib/import/types";
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
@@ -23,6 +24,8 @@ export type ImportResult = {
   input: string;
   recipe: ImportedRecipe | null;
   source: { url: string; name: string | null; image: string | null } | null;
+  /** A photo found on the web, when the recipe's own source had none. */
+  photo: { image: string; page: string; site: string } | null;
 };
 
 const JOB_COLUMNS = "id, status, total, done, failed, format, file_name";
@@ -57,11 +60,49 @@ export async function getRetryableJob(bookId: string): Promise<ImportJob | null>
     .select(JOB_COLUMNS)
     .eq("book_id", bookId)
     .eq("status", "imported")
+    .neq("format", "photos")
     .gt("failed", 0)
     .order("created_at", { ascending: false })
     .limit(1);
   if (error) throw error;
   return data[0] ?? null;
+}
+
+/**
+ * Finds a photo on the web for each of these recipes (the book's recipes
+ * without one), in the background: the worker adds each photo it finds.
+ */
+export async function startPhotoSearch(book: CurrentBook, recipeIds: string[]): Promise<ImportJob> {
+  const db = supabase();
+  const user = (await db.auth.getUser()).data.user;
+  const { data: job, error } = await db
+    .from("import_jobs")
+    .insert({ book_id: book.id, format: "photos", file_name: "photos", created_by: user?.id })
+    .select("id")
+    .single();
+  if (error) throw new ImportStartError(guardCode(error.message));
+  const rows = recipeIds.slice(0, 400).map((id, position) => ({
+    job_id: job.id,
+    book_id: book.id,
+    position,
+    entry: { recipeId: id },
+    task: "find_photo",
+    input: JSON.stringify({ recipe_id: id }),
+  }));
+  for (let i = 0; i < rows.length; i += 100) {
+    const { error: e } = await db.from("import_items").insert(rows.slice(i, i + 100));
+    if (e) {
+      await db.from("import_jobs").delete().eq("id", job.id);
+      throw new ImportStartError(guardCode(e.message));
+    }
+  }
+  const { error: qErr } = await db
+    .from("import_jobs")
+    .update({ status: "queued" })
+    .eq("id", job.id);
+  if (qErr) throw new ImportStartError("default");
+  void db.functions.invoke("import-worker", { body: {} });
+  return getJob(job.id);
 }
 
 /** Sends a job's unread recipes through the AI again; resolves with the job. */
@@ -163,7 +204,11 @@ export async function loadResults(jobId: string): Promise<ImportResult[]> {
     if (error) throw error;
     for (const row of data) {
       if (row.status === "saved") continue; // saved before a retry
-      const result = row.result as { recipe?: unknown; source?: ImportResult["source"] } | null;
+      const result = row.result as {
+        recipe?: unknown;
+        source?: ImportResult["source"];
+        photo?: ImportResult["photo"];
+      } | null;
       const parsed = result?.recipe ? importedRecipeSchema.safeParse(result.recipe) : null;
       const valid = row.status === "done" && (parsed?.success || !result);
       out.push({
@@ -175,6 +220,7 @@ export async function loadResults(jobId: string): Promise<ImportResult[]> {
         input: row.input,
         recipe: parsed?.success ? parsed.data : null,
         source: result?.source ?? null,
+        photo: result?.photo ?? null,
       });
     }
     if (data.length < 500) break;
@@ -269,14 +315,21 @@ export async function saveBatch(
     onProgress(done, total);
   }
 
-  // The source page's photo, best effort and a few at a time.
+  // The source page's photo, else one found on the web, with its credit;
+  // best effort and a few at a time.
   const photos = toSave
-    .filter(({ source }) => source?.image)
-    .map(
-      ({ newId, source }) =>
-        () =>
-          importSourceImage(book.id, newId, source!.image!),
-    );
+    .filter(({ source, photo }) => source?.image || photo?.image)
+    .map(({ newId, source, photo }) => () => {
+      if (source?.image)
+        return importSourceImage(book.id, newId, source.image, {
+          name: source.name || new URL(source.url).hostname,
+          url: source.url,
+        });
+      return importSourceImage(book.id, newId, photo!.image, {
+        name: photo!.site,
+        url: photo!.page,
+      });
+    });
   for (let i = 0; i < photos.length; i += 4)
     await Promise.all(photos.slice(i, i + 4).map((p) => p()));
 
@@ -310,7 +363,7 @@ export function asWritten(r: ImportResult): ImportResult {
       ? r.input
           .split("\n")
           .map((l) => l.trim())
-          .filter((l) => l && !l.startsWith("Title:"))
+          .filter((l) => l && !l.startsWith("Title:") && !NAVIGATION.test(l))
       : [];
   const recipe: ImportedRecipe = {
     is_recipe: true,

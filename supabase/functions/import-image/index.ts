@@ -5,7 +5,8 @@
 // from public addresses only, images only, up to 5 MB. The upload and the
 // recipe_images row are written with the user's own session, so Storage and
 // table RLS decide whether they may add a photo to this recipe. No AI, so no
-// AI quota. Body: { bookId, recipeId, url }.
+// AI quota. Body: { bookId, recipeId, url, credit?: { name, url } }; the
+// credit (the page the photo is from) is shown under the photo.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { FetchBlocked, safeFetch } from "../_shared/safe-fetch.ts";
 
@@ -61,7 +62,12 @@ Deno.serve(async (req) => {
     return reply(401, { error: "signed_out" });
   }
 
-  let body: { bookId?: string; recipeId?: string; url?: string };
+  let body: {
+    bookId?: string;
+    recipeId?: string;
+    url?: string;
+    credit?: { name?: unknown; url?: unknown };
+  };
   try {
     body = await req.json();
   } catch {
@@ -70,6 +76,13 @@ Deno.serve(async (req) => {
   if (!UUID.test(body.bookId ?? "") || !UUID.test(body.recipeId ?? "") || !body.url) {
     return reply(400, { error: "bad_request" });
   }
+
+  const creditName = typeof body.credit?.name === "string" ? body.credit.name.slice(0, 200) : "";
+  const creditUrl =
+    typeof body.credit?.url === "string" && /^https?:\/\//.test(body.credit.url)
+      ? body.credit.url.slice(0, 2048)
+      : "";
+  const credit = creditName && creditUrl ? { credit_name: creditName, credit_url: creditUrl } : {};
 
   let image;
   try {
@@ -92,6 +105,7 @@ Deno.serve(async (req) => {
     book_id: body.bookId,
     storage_path: path,
     position: 0,
+    ...credit,
   });
   if (error) {
     await db.storage.from("recipe-images").remove([path]);

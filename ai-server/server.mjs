@@ -109,8 +109,9 @@ function prepareVideo(url, folder) {
 /**
  * Runs one job in a private folder that's deleted afterwards. A video is
  * prepared first (transcript + contact sheets); then one headless Claude
- * Code session runs with only the task's tools: none, or Read, which
- * --restricted confines to that folder.
+ * Code session runs with only the task's tools: none; WebSearch, which
+ * runs on Anthropic's side (nothing on this machine fetches a page); or
+ * Read, which --restricted confines to that folder.
  */
 async function runTask(task, input) {
   const folder = mkdtempSync(path.join(tmpdir(), "cookbook-ai-"));

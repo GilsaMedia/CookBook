@@ -23,6 +23,8 @@ describe("parseJob", () => {
     expect(
       parseJob({ task: "structure_video", input: "https://vt.tiktok.com/x/" }).error,
     ).toBeUndefined();
+    expect(parseJob({ task: "find_recipe_page", input: "סלט וולדורף" }).error).toBeUndefined();
+    expect(parseJob({ task: "find_recipe_page", input: "x".repeat(1_001) }).error).toBe("too_long");
     expect(parseJob({ task: "write_my_essay", input: "x" }).error).toBe("unknown_task");
     expect(parseJob({ task: "__proto__", input: "x" }).error).toBe("unknown_task");
     expect(parseJob({ task: "structure_recipe", input: "" }).error).toBe("bad_request");

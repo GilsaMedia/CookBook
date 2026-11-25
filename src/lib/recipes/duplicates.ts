@@ -18,27 +18,34 @@ export function textSimilarity(a: string, b: string): number {
   return shared / (ga.size + gb.size - shared);
 }
 
-export const TITLE_SIMILARITY = 0.6;
-export const INGREDIENT_OVERLAP = 0.7;
+/** At least this share of all ingredients in common (Jaccard), and at least this many. */
+export const SAME_INGREDIENTS = 0.8;
+export const MIN_SHARED_INGREDIENTS = 4;
+
+/** A title for comparing: same letters and words, punctuation and spacing aside. */
+export const titleKey = (title: string) => normalizeHebrew(title).replace(/\s+/g, " ");
 
 /**
- * Recipes in the book that look like the one being imported (PRD §13.3):
- * the same source link, a title with trigram similarity above 0.6, or more
- * than 70% of the ingredients in common (by canonical name, at least 3).
+ * Recipes in the book that are the one being imported: the same source
+ * link, the same name, or the same recipe under another name (nearly the
+ * same ingredients: 80% of all of them in common, at least 4). A similar
+ * name alone isn't enough: families keep versions like "מוסקה של קורין"
+ * and "מוסקה – קורין", and both belong in the book.
  */
 export function findDuplicates(
   draft: { title: string; ingredientNames: string[]; sourceUrl: string | null },
   library: RecipeCard[],
 ): RecipeCard[] {
   const names = new Set(draft.ingredientNames.map((n) => normalizeHebrew(n)).filter(Boolean));
+  const key = titleKey(draft.title);
   const sameUrl = (u: string | null) =>
     !!u && !!draft.sourceUrl && u.replace(/\/$/, "") === draft.sourceUrl.replace(/\/$/, "");
   return library.filter((r) => {
     if (sameUrl(r.sourceUrl)) return true;
-    if (textSimilarity(draft.title, r.title) > TITLE_SIMILARITY) return true;
+    if (key && titleKey(r.title) === key) return true;
     const theirs = new Set(r.ingredientNames);
     const shared = [...names].filter((n) => theirs.has(n)).length;
-    const smaller = Math.min(names.size, theirs.size);
-    return shared >= 3 && smaller > 0 && shared / smaller > INGREDIENT_OVERLAP;
+    const all = new Set([...names, ...theirs]).size;
+    return shared >= MIN_SHARED_INGREDIENTS && shared / all >= SAME_INGREDIENTS;
   });
 }
