@@ -197,6 +197,116 @@ export type Database = {
           },
         ];
       };
+      import_items: {
+        Row: {
+          attempts: number;
+          book_id: string;
+          entry: Json;
+          error: string | null;
+          id: string;
+          input: string;
+          job_id: string;
+          position: number;
+          result: Json | null;
+          status: Database["public"]["Enums"]["import_item_status"];
+          task: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          book_id: string;
+          entry: Json;
+          error?: string | null;
+          id?: string;
+          input?: string;
+          job_id: string;
+          position: number;
+          result?: Json | null;
+          status?: Database["public"]["Enums"]["import_item_status"];
+          task: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          book_id?: string;
+          entry?: Json;
+          error?: string | null;
+          id?: string;
+          input?: string;
+          job_id?: string;
+          position?: number;
+          result?: Json | null;
+          status?: Database["public"]["Enums"]["import_item_status"];
+          task?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "import_items_job_id_book_id_fkey";
+            columns: ["job_id", "book_id"];
+            isOneToOne: false;
+            referencedRelation: "import_jobs";
+            referencedColumns: ["id", "book_id"];
+          },
+        ];
+      };
+      import_jobs: {
+        Row: {
+          book_id: string;
+          created_at: string;
+          created_by: string | null;
+          done: number;
+          failed: number;
+          file_name: string;
+          format: string;
+          id: string;
+          status: Database["public"]["Enums"]["import_job_status"];
+          total: number;
+          updated_at: string;
+        };
+        Insert: {
+          book_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          done?: number;
+          failed?: number;
+          file_name: string;
+          format: string;
+          id?: string;
+          status?: Database["public"]["Enums"]["import_job_status"];
+          total?: number;
+          updated_at?: string;
+        };
+        Update: {
+          book_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          done?: number;
+          failed?: number;
+          file_name?: string;
+          format?: string;
+          id?: string;
+          status?: Database["public"]["Enums"]["import_job_status"];
+          total?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_book_id_fkey";
+            columns: ["book_id"];
+            isOneToOne: false;
+            referencedRelation: "books";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "import_jobs_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       ingredients: {
         Row: {
           book_id: string;
@@ -435,6 +545,7 @@ export type Database = {
           source_name: string | null;
           source_url: string | null;
           status: Database["public"]["Enums"]["recipe_status"];
+          tags: string[];
           title: string;
           updated_at: string;
           uses_oven: boolean;
@@ -458,6 +569,7 @@ export type Database = {
           source_name?: string | null;
           source_url?: string | null;
           status?: Database["public"]["Enums"]["recipe_status"];
+          tags?: string[];
           title: string;
           updated_at?: string;
           uses_oven?: boolean;
@@ -481,6 +593,7 @@ export type Database = {
           source_name?: string | null;
           source_url?: string | null;
           status?: Database["public"]["Enums"]["recipe_status"];
+          tags?: string[];
           title?: string;
           updated_at?: string;
           uses_oven?: boolean;
@@ -554,11 +667,45 @@ export type Database = {
         Args: { p_book: string; p_user: string };
         Returns: string;
       };
+      claim_import_items: {
+        Args: { p_limit: number };
+        Returns: {
+          attempts: number;
+          book_id: string;
+          entry: Json;
+          error: string | null;
+          id: string;
+          input: string;
+          job_id: string;
+          position: number;
+          result: Json | null;
+          status: Database["public"]["Enums"]["import_item_status"];
+          task: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "import_items";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      finish_import_item: {
+        Args: {
+          p_error: string;
+          p_id: string;
+          p_result: Json;
+          p_status: Database["public"]["Enums"]["import_item_status"];
+        };
+        Returns: undefined;
+      };
       keepalive: { Args: never; Returns: string };
       normalize_hebrew: { Args: { input: string }; Returns: string };
     };
     Enums: {
       dish_role: "main" | "side" | "salad" | "soup" | "dessert" | "pastry" | "spread" | "drink";
+      import_item_status: "queued" | "processing" | "done" | "failed" | "skipped";
+      import_job_status: "draft" | "queued" | "running" | "ready" | "imported" | "cancelled";
       ingredient_section:
         | "produce"
         | "bakery"
@@ -701,6 +848,8 @@ export const Constants = {
   public: {
     Enums: {
       dish_role: ["main", "side", "salad", "soup", "dessert", "pastry", "spread", "drink"],
+      import_item_status: ["queued", "processing", "done", "failed", "skipped"],
+      import_job_status: ["draft", "queued", "running", "ready", "imported", "cancelled"],
       ingredient_section: [
         "produce",
         "bakery",

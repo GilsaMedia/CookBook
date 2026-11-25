@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ImportForm } from "@/components/import/ImportForm";
 import { ReviewForm } from "@/components/import/ReviewForm";
@@ -48,6 +49,14 @@ export function AddScreen() {
     <div className="flex flex-col gap-5">
       <h1 className="text-3xl font-bold">{he.importer.title}</h1>
       <ImportForm bookId={loaded.book.id} onImported={setImported} />
+      {loaded.book.role === "owner" && (
+        <Link
+          href="/import"
+          className="press flex h-12 items-center justify-center rounded-full bg-white text-sm font-semibold ring-1 ring-rule"
+        >
+          {he.bulk.entry}
+        </Link>
+      )}
     </div>
   );
 }

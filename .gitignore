@@ -47,3 +47,6 @@ next-env.d.ts
 /playwright/.cache/
 !.env.example
 
+
+# Copied from pdfjs-dist before dev/build (scripts/copy-pdf-worker.mjs)
+/public/pdf.worker.min.mjs

@@ -3,9 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pdf-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-pdf-worker.mjs",
     "build": "next build && node scripts/postbuild-sw.mjs",
-    "build:demo": "NEXT_PUBLIC_DEMO=1 next build && node scripts/postbuild-sw.mjs",
+    "build:demo": "node scripts/copy-pdf-worker.mjs && NEXT_PUBLIC_DEMO=1 next build && node scripts/postbuild-sw.mjs",
     "start": "node scripts/serve-static.mjs",
     "lint": "eslint && node scripts/check-rtl-classes.mjs",
     "lint:rtl": "node scripts/check-rtl-classes.mjs",
@@ -26,6 +28,7 @@
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
     "next": "^16.4.6",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.7"

@@ -10,9 +10,18 @@
 // Secrets (`npx supabase secrets set`): AI_SERVER_URL, AI_SERVER_SECRET.
 // Optional: AI_ALLOWED_ORIGINS (comma-separated).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { extractRecipePage, tooLittleText } from "../_shared/recipe-page.ts";
-import { checkUrl, decodeHtml, FetchBlocked, safeFetch } from "../_shared/safe-fetch.ts";
-import { videoSite } from "../_shared/video-sites.ts";
+import { callAiServer, importLink, importText } from "../_shared/ai-import.ts";
+import { checkUrl } from "../_shared/safe-fetch.ts";
+
+// Link problems are the user's to fix (422), not the AI's.
+const FETCH_ERRORS: Record<string, true> = {
+  bad_url: true,
+  blocked_url: true,
+  fetch_failed: true,
+  wrong_type: true,
+  too_large: true,
+  video_too_long: true,
+};
 
 const ORIGINS = (
   Deno.env.get("AI_ALLOWED_ORIGINS") ??
@@ -25,8 +34,8 @@ const ORIGINS = (
 const TASKS: Record<string, { maxChars: number }> = {
   structure_recipe: { maxChars: 20_000 }, // pasted text
   import_url: { maxChars: 2_048 }, // a recipe page's address
+  split_document: { maxChars: 150_000 }, // a numbered piece of a cookbook document
 };
-const MAX_PAGE_BYTES = 2 * 1024 * 1024;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -50,9 +59,7 @@ Deno.serve(async (req) => {
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const aiUrl = Deno.env.get("AI_SERVER_URL");
-  const aiSecret = Deno.env.get("AI_SERVER_SECRET");
-  if (!aiUrl || !aiSecret) return reply(503, { error: "ai_unavailable" });
+  if (!Deno.env.get("AI_SERVER_URL")) return reply(503, { error: "ai_unavailable" });
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
@@ -90,61 +97,22 @@ Deno.serve(async (req) => {
   if (error) return reply(503, { error: "ai_unavailable" });
   if (verdict !== "ok") return reply(verdict === "not_member" ? 403 : 429, { error: verdict });
 
-  const callAi = async (task: string, input: string) => {
-    try {
-      const res = await fetch(`${aiUrl.replace(/\/$/, "")}/v1/run`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${aiSecret}`, "content-type": "application/json" },
-        body: JSON.stringify({ task, input }),
-        signal: AbortSignal.timeout(145_000),
-      });
-      const out = await res.json().catch(() => ({ error: "ai_failed" }));
-      return res.ok ? out : { error: out.error ?? "ai_failed" };
-    } catch {
-      return { error: "ai_unavailable" };
-    }
-  };
-  const finish = (out: { error?: string; result?: { is_recipe?: boolean } }, source: unknown) => {
-    if (out.error) return reply(out.error === "ai_unavailable" ? 503 : 502, { error: out.error });
-    if (!out.result?.is_recipe) return reply(422, { error: "not_recipe" });
-    return reply(200, { result: out.result, source });
-  };
-
-  if (body.task === "structure_recipe")
-    return finish(await callAi("structure_recipe", body.input), null);
-
-  const link = body.input.trim();
-
-  // A video (TikTok, YouTube, Instagram): the AI server watches it, reading
-  // the caption, what's said and what's shown. If the video can't be
-  // downloaded, fall back to the page's caption below.
-  const site = videoSite(link);
-  if (site) {
-    const out = await callAi("structure_video", link);
-    if (out.error !== "fetch_failed" && out.error !== "video_too_long") {
-      const author = out.video?.author;
-      return finish(out, {
-        url: link,
-        name: author ? `${author} · ${site}` : site,
-        image: out.video?.thumbnail ?? null,
-      });
-    }
+  // Where the recipes are in a document: the app then imports each one.
+  if (body.task === "split_document") {
+    const split = await callAiServer("split_document", body.input);
+    if (split.error)
+      return reply(split.error === "ai_unavailable" ? 503 : 502, { error: split.error });
+    return reply(200, { result: split.result });
   }
 
-  // A web page: fetch it here (public addresses only), keep just the recipe.
-  let text: string;
-  let source: { url: string; name: string | null; image: string | null };
-  try {
-    const page = await safeFetch(link, {
-      maxBytes: MAX_PAGE_BYTES,
-      accept: /text\/html|application\/xhtml\+xml/,
-    });
-    const extract = extractRecipePage(decodeHtml(page), page.url);
-    if (tooLittleText(extract)) return reply(422, { error: "not_recipe" });
-    text = extract.text;
-    source = { url: link, name: extract.siteName, image: extract.image };
-  } catch (e) {
-    return reply(422, { error: e instanceof FetchBlocked ? e.message : "fetch_failed" });
-  }
-  return finish(await callAi("structure_recipe", text), source);
+  const out =
+    body.task === "import_url" ? await importLink(body.input.trim()) : await importText(body.input);
+  if (out.ok) return reply(200, { result: out.result, source: out.source });
+  const status =
+    out.error === "ai_unavailable"
+      ? 503
+      : out.error === "not_recipe" || out.error in FETCH_ERRORS
+        ? 422
+        : 502;
+  return reply(status, { error: out.error });
 });
