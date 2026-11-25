@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { he } from "@/i18n/he";
 import type { CurrentBook } from "@/lib/data/book";
-import { markSkipped, saveBatch, type ImportResult } from "@/lib/data/imports";
+import { asWritten, markSkipped, saveBatch, type ImportResult } from "@/lib/data/imports";
 import { groupDuplicates, itemsToSave, type BatchItem, type Decision } from "@/lib/import/batch";
 import type { RecipeCard } from "@/lib/recipes/types";
 
@@ -13,8 +13,9 @@ const choice = (active: boolean) =>
 
 /**
  * Step 4: the batch before saving (PRD §7.3). Likely duplicates are
- * grouped with merge / keep both / skip, entries the AI couldn't read are
- * listed, and recipes without a photo get a reminder.
+ * grouped with merge / keep both / skip, and recipes without a photo get a
+ * reminder. Entries the AI couldn't read can go through it again, or be
+ * saved as written (the default), so no recipe is left out.
  */
 export function BatchReviewStep({
   book,
@@ -22,12 +23,15 @@ export function BatchReviewStep({
   results,
   library,
   onSaved,
+  onRetry,
 }: {
   book: CurrentBook;
   jobId: string;
   results: ImportResult[];
   library: RecipeCard[];
   onSaved: (count: number) => void;
+  /** Sends the failed entries through the AI again. */
+  onRetry: () => Promise<void>;
 }) {
   const ready = results.filter((r) => r.status === "done");
   const failed = results.filter((r) => r.status === "failed");
@@ -49,16 +53,33 @@ export function BatchReviewStep({
   const [decisions, setDecisions] = useState(new Map<string, Decision>());
   const [saving, setSaving] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string>();
+  const [keepFailed, setKeepFailed] = useState(true);
+  const [retrying, setRetrying] = useState(false);
 
   const toSave = itemsToSave(items, groups, decisions);
   const title = new Map(items.map((i) => [i.id, i.title]));
   const noPhoto = ready.filter((r) => toSave.has(r.id) && !r.source?.image).length;
+  const count = toSave.size + (keepFailed ? failed.length : 0);
 
-  async function save() {
-    setSaving({ done: 0, total: toSave.size });
+  async function retry() {
+    setRetrying(true);
     setError(undefined);
     try {
-      const chosen = ready.filter((r) => toSave.has(r.id));
+      await onRetry();
+    } catch {
+      setError(he.bulk.errors.default);
+      setRetrying(false);
+    }
+  }
+
+  async function save() {
+    setSaving({ done: 0, total: count });
+    setError(undefined);
+    try {
+      const chosen = [
+        ...ready.filter((r) => toSave.has(r.id)),
+        ...(keepFailed ? failed.map(asWritten) : []),
+      ];
       await markSkipped(ready.filter((r) => !toSave.has(r.id)).map((r) => r.id));
       const count = await saveBatch(book, jobId, chosen, (done, total) =>
         setSaving({ done, total }),
@@ -146,11 +167,28 @@ export function BatchReviewStep({
             {he.bulk.failedTitle} · {failed.length}
           </h2>
           <p className="text-sm text-muted">{he.bulk.failedHint}</p>
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex max-h-60 flex-col gap-1 overflow-y-auto text-sm">
             {failed.map((r) => (
               <li key={r.id}>{r.entry.title}</li>
             ))}
           </ul>
+          <button
+            type="button"
+            disabled={retrying || !!saving}
+            onClick={retry}
+            className="press h-11 rounded-full bg-white text-sm font-semibold text-accent ring-1 ring-accent disabled:opacity-60"
+          >
+            {retrying ? he.bulk.retrying : he.bulk.retryFailed(failed.length)}
+          </button>
+          <label className="flex min-h-11 items-center gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={keepFailed}
+              onChange={(e) => setKeepFailed(e.target.checked)}
+              className="size-5 accent-accent"
+            />
+            {he.bulk.saveAsWritten}
+          </label>
         </section>
       )}
 
@@ -162,11 +200,11 @@ export function BatchReviewStep({
       )}
       <button
         type="button"
-        disabled={!!saving || toSave.size === 0}
+        disabled={!!saving || retrying || count === 0}
         onClick={save}
         className="press h-12 rounded-full bg-accent text-base font-semibold text-white disabled:opacity-60"
       >
-        {saving ? he.bulk.saving(saving.done, saving.total) : he.bulk.save(toSave.size)}
+        {saving ? he.bulk.saving(saving.done, saving.total) : he.bulk.save(count)}
       </button>
     </div>
   );

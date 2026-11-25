@@ -4,14 +4,15 @@
 // it right after queuing a job so work starts at once. It takes no input
 // and returns only counts: calling it can't do anything the owner hasn't
 // already queued, and the queue (claim_import_items) is service-role only.
-// Each run claims two items at a time and stops in time to finish within
-// the Edge Function limit; the next run picks up the rest.
+// Runs overlap, so the queue itself keeps at most two items processing
+// across all runs (the AI server's limit); each run stops in time to finish
+// within the Edge Function limit, and the next run picks up the rest.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { importLink, importText } from "../_shared/ai-import.ts";
 
 const BUDGET_MS = 70_000; // start new work only this long into a run
-const PER_CLAIM = 2; // the AI server runs two jobs at a time
-const RETRYABLE = new Set(["busy", "ai_unavailable", "usage_limit"]);
+const AT_ONCE = 2; // the AI server runs two jobs at a time
+const OUTAGE = new Set(["ai_unavailable", "usage_limit"]);
 
 type Item = {
   id: string;
@@ -36,8 +37,9 @@ Deno.serve(async () => {
     const out =
       item.task === "import_url" ? await importLink(item.input) : await importText(item.input);
     if (out.ok) return finish(item.id, "done", { recipe: out.result, source: out.source }, "");
-    // The server being busy or away isn't the recipe's fault: try again later.
-    if (RETRYABLE.has(out.error) && item.attempts < 3)
+    // Busy or away isn't the recipe's fault: back to the queue, a little later.
+    // Busy doesn't use up an attempt (finish_import_item gives it back).
+    if (out.error === "busy" || (OUTAGE.has(out.error) && item.attempts < 3))
       return finish(item.id, "queued", null, out.error);
     return finish(item.id, "failed", null, out.error);
   }
@@ -45,7 +47,7 @@ Deno.serve(async () => {
   const started = Date.now();
   let processed = 0;
   while (Date.now() - started < BUDGET_MS) {
-    const { data, error } = await db.rpc("claim_import_items", { p_limit: PER_CLAIM });
+    const { data, error } = await db.rpc("claim_import_items", { p_limit: AT_ONCE });
     if (error || !data?.length) break;
     await Promise.all((data as Item[]).map(work));
     processed += data.length;

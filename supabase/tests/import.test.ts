@@ -177,3 +177,116 @@ describe("the worker's queue", () => {
     expect(result!.result).toEqual({ title: "א" });
   });
 });
+
+describe("finishing every recipe", () => {
+  let jobId: string;
+  let ids: string[];
+
+  it("keeps at most p_limit items processing across overlapping runs", async () => {
+    const { data: job } = await newJob(stranger);
+    jobId = job!.id;
+    await stranger.client
+      .from("import_items")
+      .insert([0, 1, 2].map((p) => item(jobId, stranger.bookId, p)));
+    await stranger.client.from("import_jobs").update({ status: "queued" }).eq("id", jobId);
+
+    const first = await admin().rpc("claim_import_items", { p_limit: 2 });
+    expect(first.data).toHaveLength(2);
+    // A second run while those two are still processing gets nothing.
+    const second = await admin().rpc("claim_import_items", { p_limit: 2 });
+    expect(second.data).toHaveLength(0);
+    ids = first.data!.map((i) => i.id);
+  });
+
+  it("puts a 'busy' item back without using an attempt, and not at once", async () => {
+    await admin().rpc("finish_import_item", {
+      p_id: ids[0],
+      p_status: "queued",
+      p_result: null,
+      p_error: "busy",
+    });
+    const { data: row } = await admin()
+      .from("import_items")
+      .select("status, attempts, retry_at")
+      .eq("id", ids[0])
+      .single();
+    expect(row!.status).toBe("queued");
+    expect(row!.attempts).toBe(0);
+    expect(new Date(row!.retry_at!).getTime()).toBeGreaterThan(Date.now());
+
+    // One slot is free, but the busy item waits: the third item is next.
+    const { data: next } = await admin().rpc("claim_import_items", { p_limit: 2 });
+    expect(next!.map((i) => i.position)).toEqual([2]);
+    ids.push(next![0].id);
+  });
+
+  it("lets only the owner send failed items through again", async () => {
+    await admin().rpc("finish_import_item", {
+      p_id: ids[1],
+      p_status: "done",
+      p_result: { title: "א" },
+      p_error: "",
+    });
+    await admin().rpc("finish_import_item", {
+      p_id: ids[2],
+      p_status: "failed",
+      p_result: null,
+      p_error: "ai_failed",
+    });
+    // The busy item is still waiting, so the job isn't ready yet; finish it too.
+    await admin().from("import_items").update({ retry_at: null }).eq("id", ids[0]);
+    const { data: again } = await admin().rpc("claim_import_items", { p_limit: 2 });
+    await admin().rpc("finish_import_item", {
+      p_id: again![0].id,
+      p_status: "failed",
+      p_result: null,
+      p_error: "not_recipe",
+    });
+    let { data: job } = await admin()
+      .from("import_jobs")
+      .select("status, done, failed")
+      .eq("id", jobId)
+      .single();
+    expect(job).toEqual({ status: "ready", done: 1, failed: 2 });
+
+    // The owner saves what was read; marking it saved is allowed, "done" isn't.
+    expect(
+      (await stranger.client.from("import_items").update({ status: "done" }).eq("id", ids[2]))
+        .error,
+    ).not.toBeNull();
+    await stranger.client.from("import_items").update({ status: "saved" }).eq("id", ids[1]);
+    await stranger.client.from("import_jobs").update({ status: "imported" }).eq("id", jobId);
+
+    expect((await owner.client.rpc("retry_import", { p_job: jobId })).error?.message).toContain(
+      "not_found",
+    );
+    // A job can't be pushed back to queued by hand.
+    await stranger.client.from("import_jobs").update({ status: "queued" }).eq("id", jobId);
+    ({ data: job } = await admin()
+      .from("import_jobs")
+      .select("status, done, failed")
+      .eq("id", jobId)
+      .single());
+    expect(job!.status).toBe("imported");
+
+    const { data: count, error } = await stranger.client.rpc("retry_import", { p_job: jobId });
+    expect(error).toBeNull();
+    expect(count).toBe(2);
+    ({ data: job } = await admin()
+      .from("import_jobs")
+      .select("status, done, failed")
+      .eq("id", jobId)
+      .single());
+    expect(job).toEqual({ status: "queued", done: 1, failed: 0 });
+    const { data: items } = await admin()
+      .from("import_items")
+      .select("status, attempts")
+      .eq("job_id", jobId)
+      .order("position");
+    expect(items).toEqual([
+      { status: "queued", attempts: 0 },
+      { status: "saved", attempts: 1 },
+      { status: "queued", attempts: 0 },
+    ]);
+  });
+});
