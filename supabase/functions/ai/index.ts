@@ -10,7 +10,7 @@
 // Secrets (`npx supabase secrets set`): AI_SERVER_URL, AI_SERVER_SECRET.
 // Optional: AI_ALLOWED_ORIGINS (comma-separated).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { importLink, importText } from "../_shared/ai-import.ts";
+import { callAiServer, importLink, importText } from "../_shared/ai-import.ts";
 import { checkUrl } from "../_shared/safe-fetch.ts";
 
 // Link problems are the user's to fix (422), not the AI's.
@@ -34,6 +34,7 @@ const ORIGINS = (
 const TASKS: Record<string, { maxChars: number }> = {
   structure_recipe: { maxChars: 20_000 }, // pasted text
   import_url: { maxChars: 2_048 }, // a recipe page's address
+  split_document: { maxChars: 150_000 }, // a numbered piece of a cookbook document
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -95,6 +96,14 @@ Deno.serve(async (req) => {
   });
   if (error) return reply(503, { error: "ai_unavailable" });
   if (verdict !== "ok") return reply(verdict === "not_member" ? 403 : 429, { error: verdict });
+
+  // Where the recipes are in a document: the app then imports each one.
+  if (body.task === "split_document") {
+    const split = await callAiServer("split_document", body.input);
+    if (split.error)
+      return reply(split.error === "ai_unavailable" ? 503 : 502, { error: split.error });
+    return reply(200, { result: split.result });
+  }
 
   const out =
     body.task === "import_url" ? await importLink(body.input.trim()) : await importText(body.input);

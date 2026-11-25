@@ -120,16 +120,20 @@ export const he = {
       "Google Takeout הוא הייצוא הרשמי של Google: מקבלים קובץ ZIP עם כל הפתקים, התוויות והתמונות.",
     openTakeout: "פתיחת Google Takeout",
     chooseZip: "בחירת קובץ ה-ZIP",
-    docsSteps: [
-      "פותחים את המסמך ב-Google Docs.",
-      "קובץ ← הורדה ← Microsoft Word (.docx).",
-      "חוזרים לכאן ובוחרים את הקובץ.",
-    ],
-    docsNote: "כל קטגוריה צריכה כותרת (״כותרת 1״) וכל מתכון כותרת מתחתיה (״כותרת 2״).",
+    docsDrive: "בחירת המסמך מ-Google Drive",
+    docsDriveHint: "בוחרים את מסמך המתכונים (Google Docs או Word) ישר מ-Drive, בלי להוריד כלום.",
+    docsUploadInstead: "או העלאת קובץ מהמכשיר (Word, טקסט או HTML)",
+    docsReading: "קוראים את המסמך…",
+    docsSplitting: (done: number, total: number) =>
+      total > 1
+        ? `Claude מחפש את המתכונים במסמך… חלק ${Math.min(done + 1, total)} מתוך ${total}`
+        : "Claude מחפש את המתכונים במסמך… זה לוקח כדקה.",
+    docsNote: "המסמך יכול להיות בכל מבנה: Claude מוצא בו את המתכונים ואת הקטגוריות.",
     chooseDocx: "בחירת קובץ Word",
     reading: "קוראים את הקובץ…",
     errors: {
-      pdf: "קובץ PDF מאבד את הכותרות של המסמך. כדאי להוריד את המסמך כ-Word (.docx) ולהעלות אותו.",
+      pdf: "קובץ PDF עוד לא נתמך. אפשר לבחור את המסמך מ-Google Drive, או להעלות אותו כ-Word (.docx).",
+      no_recipes: "Claude לא מצא מתכונים במסמך הזה.",
       unreadable: "לא הצלחנו לקרוא את הקובץ. צריך קובץ .docx או ZIP של Google Takeout.",
       no_headings:
         "לא מצאנו כותרות במסמך. כל מתכון צריך כותרת (סגנון ״כותרת 2״), וכל קטגוריה כותרת מעליה.",

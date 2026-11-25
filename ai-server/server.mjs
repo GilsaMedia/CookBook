@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { TASKS } from "./tasks.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 1024 * 1024; // a piece of a long document fits
 const MAX_JOBS = 2;
 const TIMEOUT_MS = 130_000;
 // A video job does download + speech-to-text + frames first, then Claude;

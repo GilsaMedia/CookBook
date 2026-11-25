@@ -157,7 +157,5 @@ test("a PDF asks for the Word export", async ({ page }) => {
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4"),
   });
-  await expect(
-    page.getByRole("alert").filter({ hasText: "כדאי להוריד את המסמך כ-Word" }),
-  ).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "קובץ PDF עוד לא נתמך" })).toBeVisible();
 });

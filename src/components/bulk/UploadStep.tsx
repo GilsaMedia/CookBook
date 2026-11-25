@@ -7,6 +7,7 @@ import { driveImportReady, TAKEOUT_KEEP } from "@/lib/import/google-drive";
 import { readImages } from "@/lib/import/images";
 import { parseCollection, ParseError } from "@/lib/import/parse";
 import type { ParsedCollection } from "@/lib/import/types";
+import { DocsImport } from "./DocsImport";
 import { KeepFromDrive } from "./KeepFromDrive";
 
 const tab = (active: boolean) =>
@@ -38,9 +39,11 @@ function Steps({ steps }: { steps: readonly string[] }) {
  * after coming back to a ZIP import).
  */
 export function UploadStep({
+  bookId,
   onParsed,
   reselect = false,
 }: {
+  bookId: string;
   onParsed: (fileName: string, parsed: ParsedCollection, images: ImageFiles) => void;
   reselect?: boolean;
 }) {
@@ -63,17 +66,12 @@ export function UploadStep({
     }
   }
 
-  const zip = reselect || source === "keep";
   const picker = (
     <label className="press flex h-12 cursor-pointer items-center justify-center rounded-full bg-accent text-base font-semibold text-white">
-      {reading ? he.bulk.reading : zip ? he.bulk.chooseZip : he.bulk.chooseDocx}
+      {reading ? he.bulk.reading : he.bulk.chooseZip}
       <input
         type="file"
-        accept={
-          zip
-            ? ".zip,application/zip"
-            : ".docx,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        }
+        accept=".zip,application/zip"
         className="sr-only"
         disabled={reading}
         onChange={(e) => e.target.files?.[0] && read(e.target.files[0])}
@@ -151,14 +149,7 @@ export function UploadStep({
         </>
       )}
 
-      {source === "docs" && (
-        <>
-          <Steps steps={he.bulk.docsSteps} />
-          <p className="text-sm text-muted">{he.bulk.docsNote}</p>
-          {picker}
-          {problem}
-        </>
-      )}
+      {source === "docs" && <DocsImport bookId={bookId} onParsed={onParsed} />}
     </div>
   );
 }

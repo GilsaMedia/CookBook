@@ -93,6 +93,7 @@ export function ImportScreen() {
   else if (step.name === "upload")
     body = (
       <UploadStep
+        bookId={book!.id}
         onParsed={(fileName, parsed, images) => {
           imageCache = images;
           setStep({ name: "map", fileName, parsed });
@@ -125,6 +126,7 @@ export function ImportScreen() {
           step.job.file_name !== "Google Keep" &&
           imageCache.size === 0 && (
             <UploadStep
+              bookId={book!.id}
               reselect
               onParsed={(_name, _parsed, images) => {
                 imageCache = images;
