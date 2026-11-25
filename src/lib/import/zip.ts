@@ -1,6 +1,6 @@
 /**
  * A minimal ZIP reader for the browser (and Node 18+): enough for .docx
- * files and Google Takeout archives. Reads the central directory and
+ * (Word) files. Reads the central directory and
  * inflates entries with the platform's DecompressionStream, so it needs
  * no dependency. Stored (0) and deflated (8) entries only; no encryption,
  * no ZIP64.

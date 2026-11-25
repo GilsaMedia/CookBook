@@ -77,7 +77,6 @@ async function actAsWorker(expected: number) {
 
 async function uploadSample(page: Page) {
   await page.goto("/import");
-  await page.getByRole("button", { name: "Google Docs / Word" }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: "cookbook.docx",
     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -146,12 +145,6 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
 test("a PDF asks for the Word export", async ({ page }) => {
   await signIn(page);
   await page.goto("/import");
-  // Keep is the default; its steps link to Takeout with only Keep selected.
-  await expect(page.getByRole("link", { name: /Google Takeout/ })).toHaveAttribute(
-    "href",
-    "https://takeout.google.com/settings/takeout/custom/keep",
-  );
-  await page.getByRole("button", { name: "Google Docs / Word" }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: "cookbook.pdf",
     mimeType: "application/pdf",

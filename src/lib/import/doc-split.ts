@@ -48,13 +48,10 @@ export function splitDocument(paragraphs: Paragraph[]): ImportEntry[] {
       key: `doc-${entries.length + 1}`,
       title: current.title,
       group: category,
-      labels: [],
       kind,
       text: kind === "recipe" ? [`Title: ${current.title}`, ...lines].join("\n") : "",
       sourceUrl,
       sourceName: sourceUrl ? hostName(sourceUrl) : null,
-      createdAt: null,
-      images: [],
     });
     current = null;
   };

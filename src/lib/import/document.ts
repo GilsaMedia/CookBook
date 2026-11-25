@@ -134,13 +134,10 @@ export function entriesFrom(lines: string[], found: Found[]): ImportEntry[] {
       key: `doc-${f.start}`,
       title,
       group: f.category?.trim() || null,
-      labels: [],
       kind,
       text: kind === "recipe" ? [`Title: ${title}`, ...body].join("\n") : "",
       sourceUrl,
       sourceName: sourceUrl ? host(sourceUrl) : null,
-      createdAt: null,
-      images: [],
     };
   });
 }

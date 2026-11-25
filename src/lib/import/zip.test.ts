@@ -5,9 +5,9 @@ import { makeZip } from "./zip-test-helper";
 
 describe("readZip", () => {
   it("reads stored entries with Hebrew names", async () => {
-    const entries = readZip(makeZip({ "Keep/מרק.json": '{"title":"מרק"}', "a/b.txt": "hi" }));
-    expect(entries.map((e) => e.name)).toEqual(["Keep/מרק.json", "a/b.txt"]);
-    expect(await readText(entries[0])).toBe('{"title":"מרק"}');
+    const entries = readZip(makeZip({ "word/מרק.xml": "<w:t>מרק</w:t>", "a/b.txt": "hi" }));
+    expect(entries.map((e) => e.name)).toEqual(["word/מרק.xml", "a/b.txt"]);
+    expect(await readText(entries[0])).toBe("<w:t>מרק</w:t>");
   });
 
   it("inflates deflated entries", async () => {

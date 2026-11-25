@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BatchReviewStep } from "@/components/bulk/BatchReviewStep";
 import { MappingStep } from "@/components/bulk/MappingStep";
 import { ProgressStep } from "@/components/bulk/ProgressStep";
-import { UploadStep } from "@/components/bulk/UploadStep";
+import { DocsImport } from "@/components/bulk/DocsImport";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
 import { getCurrentBook, type CurrentBook } from "@/lib/data/book";
@@ -14,7 +14,6 @@ import {
   ImportStartError,
   loadResults,
   startImport,
-  type ImageFiles,
   type ImportJob,
   type ImportResult,
 } from "@/lib/data/imports";
@@ -31,11 +30,7 @@ type Step =
   | { name: "review"; job: ImportJob; results: ImportResult[] }
   | { name: "saved"; count: number };
 
-// Keep photos stay in memory between steps (they're only uploaded after
-// saving). Leaving the app loses them; the review asks for the ZIP again.
-let imageCache: ImageFiles = new Map();
-
-/** Bulk import (PRD §7.3): upload → mapping → progress → batch review → saved. */
+/** Bulk import (PRD §7.3): document → mapping → progress → batch review → saved. */
 export function ImportScreen() {
   const [book, setBook] = useState<CurrentBook | null>(null);
   const [library, setLibrary] = useState<RecipeCard[]>([]);
@@ -92,13 +87,13 @@ export function ImportScreen() {
   else if (step.name === "error") body = <p className="text-muted">{step.text}</p>;
   else if (step.name === "upload")
     body = (
-      <UploadStep
-        bookId={book!.id}
-        onParsed={(fileName, parsed, images) => {
-          imageCache = images;
-          setStep({ name: "map", fileName, parsed });
-        }}
-      />
+      <div className="flex flex-col gap-4">
+        <p className="text-muted">{he.bulk.intro}</p>
+        <DocsImport
+          bookId={book!.id}
+          onParsed={(fileName, parsed) => setStep({ name: "map", fileName, parsed })}
+        />
+      </div>
     );
   else if (step.name === "map")
     body = (
@@ -121,32 +116,13 @@ export function ImportScreen() {
     );
   else if (step.name === "review")
     body = (
-      <>
-        {step.job.format === "keep" &&
-          step.job.file_name !== "Google Keep" &&
-          imageCache.size === 0 && (
-            <UploadStep
-              bookId={book!.id}
-              reselect
-              onParsed={(_name, _parsed, images) => {
-                imageCache = images;
-                setStep({ ...step });
-              }}
-            />
-          )}
-        <BatchReviewStep
-          book={book!}
-          jobId={step.job.id}
-          results={step.results}
-          library={library}
-          images={imageCache}
-          imagesNeeded={step.job.format === "keep" && step.job.file_name !== "Google Keep"}
-          onSaved={(count) => {
-            imageCache = new Map();
-            setStep({ name: "saved", count });
-          }}
-        />
-      </>
+      <BatchReviewStep
+        book={book!}
+        jobId={step.job.id}
+        results={step.results}
+        library={library}
+        onSaved={(count) => setStep({ name: "saved", count })}
+      />
     );
   else
     body = (

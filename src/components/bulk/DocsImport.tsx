@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { he } from "@/i18n/he";
 import { AiError, findRecipes } from "@/lib/ai/client";
-import type { ImageFiles } from "@/lib/data/imports";
 import { docxLines, entriesFrom, htmlLines, pieces, textLines } from "@/lib/import/document";
 import { readDocx } from "@/lib/import/docx";
 import { splitDocument } from "@/lib/import/doc-split";
@@ -41,7 +40,7 @@ async function readDocument(name: string, mimeType: string, bytes: Uint8Array): 
 }
 
 /**
- * The Google Docs / Word tab: pick the document from Drive (or upload a
+ * Step 1 of a bulk import: pick the document from Drive (or upload a
  * file), then Claude finds the recipes in it, however it's laid out. If
  * Claude can't be reached, a Word document with headings is still split by
  * its headings.
@@ -51,7 +50,7 @@ export function DocsImport({
   onParsed,
 }: {
   bookId: string;
-  onParsed: (fileName: string, parsed: ParsedCollection, images: ImageFiles) => void;
+  onParsed: (fileName: string, parsed: ParsedCollection) => void;
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string>();
@@ -73,7 +72,7 @@ export function DocsImport({
       entries = doc.headingEntries; // Claude unavailable: the headings still work
     }
     if (!entries.length) throw new ParseError("no_recipes");
-    onParsed(doc.name, { format: "docx", entries }, new Map());
+    onParsed(doc.name, { format: "docx", entries });
   }
 
   const fail = (e: unknown) => {
@@ -81,7 +80,7 @@ export function DocsImport({
     setError(
       (e instanceof AiError ? he.importer.errors[code] : undefined) ??
         he.bulk.errors[code] ??
-        he.bulk.keepErrors[code] ??
+        he.bulk.driveErrors[code] ??
         he.bulk.errors.default,
     );
     setStatus(null);

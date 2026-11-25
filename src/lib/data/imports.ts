@@ -155,21 +155,16 @@ export async function loadResults(jobId: string): Promise<ImportResult[]> {
   return out;
 }
 
-/** Image bytes from the uploaded Keep ZIP, by file name. Lost on reload. */
-export type ImageFiles = Map<string, { bytes: Uint8Array; type: string }>;
-
 /**
  * Saves the reviewed batch: creates the categories the mapping named,
  * then recipes, ingredients and steps in a few large inserts (owners'
- * imports are approved at once), then photos: Keep attachments from the
- * ZIP, or the source page's photo. Skipped items are marked; the job is
- * marked imported.
+ * imports are approved at once), then each source page's photo. Skipped
+ * items are marked; the job is marked imported.
  */
 export async function saveBatch(
   book: CurrentBook,
   jobId: string,
   results: ImportResult[],
-  images: ImageFiles,
   onProgress: (done: number, total: number) => void,
 ): Promise<number> {
   const db = supabase();
@@ -210,8 +205,6 @@ export async function saveBatch(
       oven_temp: recipe?.uses_oven ? recipe.oven_temp : null,
       uses_stovetop: recipe?.uses_stovetop ?? false,
       make_ahead: recipe?.make_ahead ?? false,
-      tags: entry.labels,
-      ...(entry.createdAt ? { created_at: entry.createdAt } : {}),
     }));
     const { error } = await db.from("recipes").insert(recipes);
     if (error) throw error;
@@ -249,37 +242,19 @@ export async function saveBatch(
     onProgress(done, total);
   }
 
-  // Photos, best effort and a few at a time.
-  const jobs = toSave.flatMap(({ newId, entry, source }): (() => Promise<unknown>)[] => {
-    const files = entry.images.map((name) => images.get(name)).filter((f) => !!f);
-    if (files.length) return [() => uploadImages(book.id, newId, files)];
-    if (source?.image) return [() => importSourceImage(book.id, newId, source.image!)];
-    return [];
-  });
-  for (let i = 0; i < jobs.length; i += 4) await Promise.all(jobs.slice(i, i + 4).map((j) => j()));
+  // The source page's photo, best effort and a few at a time.
+  const photos = toSave
+    .filter(({ source }) => source?.image)
+    .map(
+      ({ newId, source }) =>
+        () =>
+          importSourceImage(book.id, newId, source!.image!),
+    );
+  for (let i = 0; i < photos.length; i += 4)
+    await Promise.all(photos.slice(i, i + 4).map((p) => p()));
 
   await db.from("import_jobs").update({ status: "imported" }).eq("id", jobId);
   return total;
-}
-
-async function uploadImages(
-  bookId: string,
-  recipeId: string,
-  files: { bytes: Uint8Array; type: string }[],
-) {
-  const db = supabase();
-  for (const [position, file] of files.entries()) {
-    const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
-    const path = `${bookId}/${recipeId}/keep-${position}-${crypto.randomUUID()}.${ext}`;
-    const { error } = await db.storage
-      .from("recipe-images")
-      .upload(path, file.bytes, { contentType: file.type });
-    if (!error) {
-      await db
-        .from("recipe_images")
-        .insert({ recipe_id: recipeId, book_id: bookId, storage_path: path, position });
-    }
-  }
 }
 
 /** Marks items the owner chose to skip, so the job's history is honest. */

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { he } from "@/i18n/he";
 import type { CurrentBook } from "@/lib/data/book";
-import { markSkipped, saveBatch, type ImageFiles, type ImportResult } from "@/lib/data/imports";
+import { markSkipped, saveBatch, type ImportResult } from "@/lib/data/imports";
 import { groupDuplicates, itemsToSave, type BatchItem, type Decision } from "@/lib/import/batch";
 import type { RecipeCard } from "@/lib/recipes/types";
 
@@ -21,16 +21,12 @@ export function BatchReviewStep({
   jobId,
   results,
   library,
-  images,
-  imagesNeeded,
   onSaved,
 }: {
   book: CurrentBook;
   jobId: string;
   results: ImportResult[];
   library: RecipeCard[];
-  images: ImageFiles;
-  imagesNeeded: boolean;
   onSaved: (count: number) => void;
 }) {
   const ready = results.filter((r) => r.status === "done");
@@ -56,9 +52,7 @@ export function BatchReviewStep({
 
   const toSave = itemsToSave(items, groups, decisions);
   const title = new Map(items.map((i) => [i.id, i.title]));
-  const noPhoto = ready.filter(
-    (r) => toSave.has(r.id) && !r.source?.image && !(r.entry.images.length && images.size),
-  ).length;
+  const noPhoto = ready.filter((r) => toSave.has(r.id) && !r.source?.image).length;
 
   async function save() {
     setSaving({ done: 0, total: toSave.size });
@@ -66,7 +60,7 @@ export function BatchReviewStep({
     try {
       const chosen = ready.filter((r) => toSave.has(r.id));
       await markSkipped(ready.filter((r) => !toSave.has(r.id)).map((r) => r.id));
-      const count = await saveBatch(book, jobId, chosen, images, (done, total) =>
+      const count = await saveBatch(book, jobId, chosen, (done, total) =>
         setSaving({ done, total }),
       );
       onSaved(count);
@@ -79,9 +73,6 @@ export function BatchReviewStep({
   return (
     <div className="flex flex-col gap-5">
       <p>{he.bulk.reviewIntro(ready.length)}</p>
-      {imagesNeeded && images.size === 0 && (
-        <p className="text-sm text-muted">{he.bulk.reselect}</p>
-      )}
 
       {groups.length > 0 && (
         <section className="flex flex-col gap-3">
