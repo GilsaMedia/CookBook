@@ -122,11 +122,22 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
     "true",
   );
   await expect(page.getByText("לא הצלחנו לקרוא · 1")).toBeVisible();
-  await page.getByRole("button", { name: "שמירת 2 מתכונים" }).click();
-  await expect(page.getByText("נשמרו 2 מתכונים.")).toBeVisible({ timeout: 20_000 });
+
+  // Try the one that failed again: it goes back through the queue alone.
+  await page.getByRole("button", { name: "לנסות שוב (1)" }).click();
+  await expect(page.getByRole("progressbar")).toBeVisible();
+  await actAsWorker(1);
+  await expect(page.getByRole("heading", { name: "בדיקת הייבוא" })).toBeVisible({
+    timeout: 20_000,
+  });
+  // Still unreadable: by default it's saved as written, so nothing is lost.
+  await expect(page.getByText("לא הצלחנו לקרוא · 1")).toBeVisible();
+  await expect(page.getByLabel("לשמור אותם כמו שהם כתובים, בלי סידור")).toBeChecked();
+  await page.getByRole("button", { name: "שמירת 3 מתכונים" }).click();
+  await expect(page.getByText("נשמרו 3 מתכונים.")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "לספרייה" }).click();
-  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(2);
+  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(3);
   await page.getByRole("link", { name: /מוסקה/ }).click();
   await expect(page.getByText("אופים בתנור על 160 מעלות שעה.")).toBeVisible();
 
@@ -139,6 +150,7 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
   });
   await expect(page.getByText("כבר בספר").first()).toBeVisible();
   await page.getByRole("button", { name: "דילוג על כל הכפילויות" }).click();
+  await page.getByLabel("לשמור אותם כמו שהם כתובים, בלי סידור").uncheck();
   await expect(page.getByRole("button", { name: "שמירת 0 מתכונים" })).toBeDisabled();
 });
 

@@ -208,6 +208,7 @@ export type Database = {
           job_id: string;
           position: number;
           result: Json | null;
+          retry_at: string | null;
           status: Database["public"]["Enums"]["import_item_status"];
           task: string;
           updated_at: string;
@@ -222,6 +223,7 @@ export type Database = {
           job_id: string;
           position: number;
           result?: Json | null;
+          retry_at?: string | null;
           status?: Database["public"]["Enums"]["import_item_status"];
           task: string;
           updated_at?: string;
@@ -236,6 +238,7 @@ export type Database = {
           job_id?: string;
           position?: number;
           result?: Json | null;
+          retry_at?: string | null;
           status?: Database["public"]["Enums"]["import_item_status"];
           task?: string;
           updated_at?: string;
@@ -679,6 +682,7 @@ export type Database = {
           job_id: string;
           position: number;
           result: Json | null;
+          retry_at: string | null;
           status: Database["public"]["Enums"]["import_item_status"];
           task: string;
           updated_at: string;
@@ -701,10 +705,11 @@ export type Database = {
       };
       keepalive: { Args: never; Returns: string };
       normalize_hebrew: { Args: { input: string }; Returns: string };
+      retry_import: { Args: { p_job: string }; Returns: number };
     };
     Enums: {
       dish_role: "main" | "side" | "salad" | "soup" | "dessert" | "pastry" | "spread" | "drink";
-      import_item_status: "queued" | "processing" | "done" | "failed" | "skipped";
+      import_item_status: "queued" | "processing" | "done" | "failed" | "skipped" | "saved";
       import_job_status: "draft" | "queued" | "running" | "ready" | "imported" | "cancelled";
       ingredient_section:
         | "produce"
@@ -848,7 +853,7 @@ export const Constants = {
   public: {
     Enums: {
       dish_role: ["main", "side", "salad", "soup", "dessert", "pastry", "spread", "drink"],
-      import_item_status: ["queued", "processing", "done", "failed", "skipped"],
+      import_item_status: ["queued", "processing", "done", "failed", "skipped", "saved"],
       import_job_status: ["draft", "queued", "running", "ready", "imported", "cancelled"],
       ingredient_section: [
         "produce",
