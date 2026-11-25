@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { useAccess } from "@/components/auth/AuthProvider";
 import { he } from "@/i18n/he";
 
 type Tab = { href: string; label: string; icon: ReactNode };
@@ -72,7 +73,10 @@ function isActive(pathname: string, href: string) {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const access = useAccess();
   if (pathname === "/login" || pathname.startsWith("/auth/")) return null;
+  // A new account waiting for approval has nowhere to go yet.
+  if (access && access.status !== "approved") return null;
 
   return (
     <nav
