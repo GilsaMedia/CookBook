@@ -468,3 +468,8 @@ verify_jwt = false
 # Verifies the session itself and writes as the user, so RLS applies.
 [functions.import-image]
 verify_jwt = false
+
+# Works through queued bulk imports (supabase/functions/import-worker).
+# Called by pg_cron every minute and by the app; takes no input.
+[functions.import-worker]
+verify_jwt = false
