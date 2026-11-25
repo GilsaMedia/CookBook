@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkUrl, FetchBlocked, isPrivateAddress, safeFetch } from "./safe-fetch";
+import { videoSite } from "./video-sites";
 
 describe("checkUrl", () => {
   it.each([
@@ -47,5 +48,20 @@ describe("safeFetch", () => {
         resolve: async () => ["10.0.0.5"],
       }),
     ).rejects.toThrow(FetchBlocked);
+  });
+});
+
+describe("videoSite", () => {
+  it.each([
+    ["https://vt.tiktok.com/ZSsjqucnh/", "TikTok"],
+    ["https://www.tiktok.com/@a/video/1", "TikTok"],
+    ["https://youtu.be/abc", "YouTube"],
+    ["https://www.youtube.com/shorts/abc", "YouTube"],
+    ["https://www.instagram.com/reel/abc/", "Instagram"],
+    ["http://www.tiktok.com/@a/video/1", null],
+    ["https://tiktok.com.evil.example/x", null],
+    ["https://www.bbcgoodfood.com/recipes/x", null],
+  ])("%s → %s", (url, expected) => {
+    expect(videoSite(url)).toBe(expected);
   });
 });

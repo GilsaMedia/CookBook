@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { he } from "@/i18n/he";
 import { AiError, importRecipe } from "@/lib/ai/client";
 import type { ImportResponse } from "@/lib/ai/schema";
+import { videoSite } from "@/lib/ai/video-sites";
 
 const field =
   "block w-full rounded-xl border border-rule bg-white px-4 text-base text-ink outline-none focus:border-accent";
@@ -106,7 +107,9 @@ export function ImportForm({
             aria-hidden="true"
             className="size-4 animate-spin rounded-full border-2 border-accent border-t-transparent"
           />
-          {he.importer.working}
+          {kind === "url" && videoSite(url.trim())
+            ? he.importer.workingVideo(videoSite(url.trim())!)
+            : he.importer.working}
         </p>
       )}
       {error && (

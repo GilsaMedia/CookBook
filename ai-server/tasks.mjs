@@ -100,6 +100,13 @@ Rules:
 - Times are minutes. oven_temp is °C, null if no oven.
 - confidence: 0 to 1 per field group; below 0.7 means the cook should check it.`;
 
+const STRUCTURE_VIDEO_SYSTEM = `${STRUCTURE_RECIPE_SYSTEM}
+
+This recipe comes from a short cooking video. You get its caption, an automatic transcript of what's said (it may mishear words), and contact sheets: image files in the current folder, each a 3×3 grid of frames in time order (left to right, then down). Read every sheet with the Read tool before answering.
+- Quantities: prefer the caption, then the speech, then on-screen text. Never guess a quantity that none of them gives.
+- Method: take the steps from what's said and what the frames show, in order. Steps seen in the frames count as given; write them as clear instructions.
+- Servings and times: only when said, written or clearly implied.`;
+
 export const TASKS = {
   structure_recipe: {
     maxChars: 20_000,
@@ -107,5 +114,24 @@ export const TASKS = {
     system: STRUCTURE_RECIPE_SYSTEM,
     schema: RECIPE_SCHEMA,
     prompt: (input) => `Recipe text:\n<<<\n${input}\n>>>`,
+  },
+  // A TikTok / YouTube / Instagram link. The server downloads the video
+  // (video.py): transcript + contact sheets, then Claude reads both.
+  structure_video: {
+    maxChars: 2_048,
+    model: () => process.env.AI_MODEL_EXTRACT || "sonnet",
+    system: STRUCTURE_VIDEO_SYSTEM,
+    schema: RECIPE_SCHEMA,
+    video: true,
+    tools: ["Read"],
+    prompt: (input, video) =>
+      [
+        `Video by ${video.author ?? "unknown"} (${input}).`,
+        `Caption:\n<<<\n${video.caption || "(none)"}\n>>>`,
+        `What's said (automatic transcript):\n<<<\n${video.transcript || "(no speech)"}\n>>>`,
+        video.sheets.length
+          ? `Contact sheets to read: ${video.sheets.join(", ")}`
+          : "No frames could be read from this video.",
+      ].join("\n\n"),
   },
 };

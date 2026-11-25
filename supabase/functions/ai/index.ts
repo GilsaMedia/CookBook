@@ -12,6 +12,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { extractRecipePage, tooLittleText } from "../_shared/recipe-page.ts";
 import { checkUrl, decodeHtml, FetchBlocked, safeFetch } from "../_shared/safe-fetch.ts";
+import { videoSite } from "../_shared/video-sites.ts";
 
 const ORIGINS = (
   Deno.env.get("AI_ALLOWED_ORIGINS") ??
@@ -89,38 +90,61 @@ Deno.serve(async (req) => {
   if (error) return reply(503, { error: "ai_unavailable" });
   if (verdict !== "ok") return reply(verdict === "not_member" ? 403 : 429, { error: verdict });
 
-  // For a link: fetch the page here (public addresses only), keep just the
-  // recipe, and remember where it came from.
-  let text = body.input;
-  let source: { url: string; name: string | null; image: string | null } | null = null;
-  if (body.task === "import_url") {
+  const callAi = async (task: string, input: string) => {
     try {
-      const page = await safeFetch(body.input.trim(), {
-        maxBytes: MAX_PAGE_BYTES,
-        accept: /text\/html|application\/xhtml\+xml/,
+      const res = await fetch(`${aiUrl.replace(/\/$/, "")}/v1/run`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${aiSecret}`, "content-type": "application/json" },
+        body: JSON.stringify({ task, input }),
+        signal: AbortSignal.timeout(145_000),
       });
-      const extract = extractRecipePage(decodeHtml(page), page.url);
-      if (tooLittleText(extract)) return reply(422, { error: "not_recipe" });
-      text = extract.text;
-      source = { url: body.input.trim(), name: extract.siteName, image: extract.image };
-    } catch (e) {
-      return reply(422, { error: e instanceof FetchBlocked ? e.message : "fetch_failed" });
+      const out = await res.json().catch(() => ({ error: "ai_failed" }));
+      return res.ok ? out : { error: out.error ?? "ai_failed" };
+    } catch {
+      return { error: "ai_unavailable" };
+    }
+  };
+  const finish = (out: { error?: string; result?: { is_recipe?: boolean } }, source: unknown) => {
+    if (out.error) return reply(out.error === "ai_unavailable" ? 503 : 502, { error: out.error });
+    if (!out.result?.is_recipe) return reply(422, { error: "not_recipe" });
+    return reply(200, { result: out.result, source });
+  };
+
+  if (body.task === "structure_recipe")
+    return finish(await callAi("structure_recipe", body.input), null);
+
+  const link = body.input.trim();
+
+  // A video (TikTok, YouTube, Instagram): the AI server watches it, reading
+  // the caption, what's said and what's shown. If the video can't be
+  // downloaded, fall back to the page's caption below.
+  const site = videoSite(link);
+  if (site) {
+    const out = await callAi("structure_video", link);
+    if (out.error !== "fetch_failed" && out.error !== "video_too_long") {
+      const author = out.video?.author;
+      return finish(out, {
+        url: link,
+        name: author ? `${author} · ${site}` : site,
+        image: out.video?.thumbnail ?? null,
+      });
     }
   }
 
-  let res: Response;
+  // A web page: fetch it here (public addresses only), keep just the recipe.
+  let text: string;
+  let source: { url: string; name: string | null; image: string | null };
   try {
-    res = await fetch(`${aiUrl.replace(/\/$/, "")}/v1/run`, {
-      method: "POST",
-      headers: { authorization: `Bearer ${aiSecret}`, "content-type": "application/json" },
-      body: JSON.stringify({ task: "structure_recipe", input: text }),
-      signal: AbortSignal.timeout(140_000),
+    const page = await safeFetch(link, {
+      maxBytes: MAX_PAGE_BYTES,
+      accept: /text\/html|application\/xhtml\+xml/,
     });
-  } catch {
-    return reply(503, { error: "ai_unavailable" });
+    const extract = extractRecipePage(decodeHtml(page), page.url);
+    if (tooLittleText(extract)) return reply(422, { error: "not_recipe" });
+    text = extract.text;
+    source = { url: link, name: extract.siteName, image: extract.image };
+  } catch (e) {
+    return reply(422, { error: e instanceof FetchBlocked ? e.message : "fetch_failed" });
   }
-  const out = await res.json().catch(() => ({ error: "ai_failed" }));
-  if (!res.ok) return reply(502, { error: out.error ?? "ai_failed" });
-  if (!out.result?.is_recipe) return reply(422, { error: "not_recipe" });
-  return reply(200, { result: out.result, source });
+  return finish(await callAi("structure_recipe", text), source);
 });

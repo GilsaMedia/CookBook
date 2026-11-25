@@ -20,6 +20,9 @@ describe("authorized", () => {
 describe("parseJob", () => {
   it("accepts known tasks only", () => {
     expect(parseJob({ task: "structure_recipe", input: "מרק" }).error).toBeUndefined();
+    expect(
+      parseJob({ task: "structure_video", input: "https://vt.tiktok.com/x/" }).error,
+    ).toBeUndefined();
     expect(parseJob({ task: "write_my_essay", input: "x" }).error).toBe("unknown_task");
     expect(parseJob({ task: "__proto__", input: "x" }).error).toBe("unknown_task");
     expect(parseJob({ task: "structure_recipe", input: "" }).error).toBe("bad_request");
@@ -34,7 +37,7 @@ describe("server", () => {
     new Promise((resolve) => {
       const server = createAiServer({
         secret: SECRET,
-        run: async (_t, input) => ({ echoed: input.length }),
+        run: async (_t, input) => ({ result: { echoed: input.length } }),
       });
       server.listen(0, "127.0.0.1", () => resolve(server));
     });

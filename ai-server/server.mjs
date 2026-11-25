@@ -21,9 +21,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { TASKS } from "./tasks.mjs";
 
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_JOBS = 2;
 const TIMEOUT_MS = 130_000;
+// A video job does download + speech-to-text + frames first, then Claude;
+// both must fit inside the Edge Function's ~150 s limit.
+const VIDEO_PREP_MS = 75_000;
+const VIDEO_CLAUDE_MS = 60_000;
 
 /** Constant-time check of "Authorization: Bearer <secret>". */
 export function authorized(header, secret) {
@@ -70,16 +75,68 @@ function failure(text) {
   return "ai_failed";
 }
 
-/** Runs one headless Claude Code session with no tools in an empty private folder. */
-function runClaude(task, input) {
-  const bin = process.env.CLAUDE_BIN || path.join(process.env.HOME ?? "", ".local/bin/claude");
+/** Runs video.py: downloads the video and writes contact sheets into `folder`. */
+function prepareVideo(url, folder) {
+  const python = path.join(HERE, ".venv/bin/python");
+  return new Promise((resolve, reject) => {
+    const child = spawn(python, [path.join(HERE, "video.py"), url, folder], {
+      cwd: folder,
+      env: {
+        PATH: process.env.PATH ?? "/usr/bin:/bin",
+        HOME: process.env.HOME ?? "",
+        LANG: "C.UTF-8",
+      },
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    let out = "";
+    const timer = setTimeout(() => child.kill("SIGKILL"), VIDEO_PREP_MS);
+    child.stdout.on("data", (d) => (out += d));
+    child.on("error", () => reject(new Error("ai_unavailable")));
+    child.on("close", () => {
+      clearTimeout(timer);
+      let data;
+      try {
+        data = JSON.parse(out.trim().split("\n").pop());
+      } catch {
+        return reject(new Error("fetch_failed"));
+      }
+      if (data.error) return reject(new Error(data.error));
+      resolve(data);
+    });
+  });
+}
+
+/**
+ * Runs one job in a private folder that's deleted afterwards. A video is
+ * prepared first (transcript + contact sheets); then one headless Claude
+ * Code session runs with only the task's tools: none, or Read, which
+ * --restricted confines to that folder.
+ */
+async function runTask(task, input) {
   const folder = mkdtempSync(path.join(tmpdir(), "cookbook-ai-"));
+  try {
+    if (!task.video) {
+      return { result: await runClaude(task, task.prompt(input), folder, TIMEOUT_MS) };
+    }
+    const video = await prepareVideo(input, folder);
+    const result = await runClaude(task, task.prompt(input, video), folder, VIDEO_CLAUDE_MS);
+    return { result, video: { author: video.author ?? null, thumbnail: video.thumbnail ?? null } };
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+}
+
+/** One headless Claude Code session; resolves with the schema-checked answer. */
+function runClaude(task, prompt, folder, timeoutMs) {
+  const bin = process.env.CLAUDE_BIN || path.join(process.env.HOME ?? "", ".local/bin/claude");
+  const tools = task.tools ?? [];
   const args = [
     "-p",
     "--model",
     task.model(),
     "--tools",
-    "",
+    tools.join(","),
+    ...(tools.length ? ["--allowedTools", ...tools] : []),
     "--restricted",
     "--strict-mcp-config",
     "--safe-mode",
@@ -101,13 +158,12 @@ function runClaude(task, input) {
     });
     let out = "";
     let err = "";
-    const timer = setTimeout(() => child.kill("SIGKILL"), TIMEOUT_MS);
+    const timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (err += d));
     child.on("error", () => reject(new Error("ai_unavailable")));
     child.on("close", () => {
       clearTimeout(timer);
-      rmSync(folder, { recursive: true, force: true });
       let result;
       try {
         result = JSON.parse(out);
@@ -123,7 +179,7 @@ function runClaude(task, input) {
         reject(new Error("ai_failed"));
       }
     });
-    child.stdin.end(task.prompt(input));
+    child.stdin.end(prompt);
   });
 }
 
@@ -134,7 +190,7 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-export function createAiServer({ secret = process.env.AI_SERVER_SECRET, run = runClaude } = {}) {
+export function createAiServer({ secret = process.env.AI_SERVER_SECRET, run = runTask } = {}) {
   return createServer((req, res) => {
     if (req.method === "GET" && req.url === "/health") return send(res, 200, { ok: true });
     if (req.method !== "POST" || req.url !== "/v1/run")
@@ -163,9 +219,9 @@ export function createAiServer({ secret = process.env.AI_SERVER_SECRET, run = ru
       jobs++;
       const started = Date.now();
       try {
-        const result = await run(job.task, job.input);
+        const out = await run(job.task, job.input);
         console.log(`${body.task} ok in ${Date.now() - started}ms`);
-        send(res, 200, { result });
+        send(res, 200, out);
       } catch (e) {
         console.log(`${body.task} failed (${e.message}) in ${Date.now() - started}ms`);
         send(res, 502, { error: e.message || "ai_failed" });
