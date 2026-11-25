@@ -230,6 +230,6 @@ describe("sharing", () => {
     expect(error).toBeNull();
     expect(
       (await stranger.client.rpc("accept_share", { p_share: data!.id })).error?.message,
-    ).toContain("not_found");
+    ).toContain("already_answered");
   });
 });
