@@ -109,5 +109,8 @@ test("an invitation into the book: it's in their switcher, live", async ({ brows
   // Gil sees Noa in the book and can take her out.
   await gil.page.reload();
   await expect(gil.page.getByRole("heading", { name: "אנשים בספר הזה" })).toBeVisible();
-  await expect(gil.page.getByText(noa)).toBeVisible();
+  const member = gil.page
+    .getByRole("listitem")
+    .filter({ has: gil.page.getByRole("button", { name: "הוצאה מהספר" }) });
+  await expect(member).toContainText(noa);
 });
