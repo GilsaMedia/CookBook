@@ -183,6 +183,8 @@ describe("finishing every recipe", () => {
   let ids: string[];
 
   it("keeps at most p_limit items processing across overlapping runs", async () => {
+    // Earlier tests leave other jobs' items claimed; they'd hold the slots.
+    await admin().from("import_items").update({ status: "failed" }).eq("status", "processing");
     const { data: job } = await newJob(stranger);
     jobId = job!.id;
     await stranger.client
