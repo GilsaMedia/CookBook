@@ -457,3 +457,14 @@ max_frequency = "1m0s"
 # Vector buckets are a local default the app doesn't use.
 [remotes.production.storage.vector]
 enabled = false
+
+# The AI front door (supabase/functions/ai). It verifies the session itself,
+# so the gateway's legacy JWT check is off (it doesn't understand the new
+# publishable/secret keys).
+[functions.ai]
+verify_jwt = false
+
+# Copies a recipe's source photo into Storage (supabase/functions/import-image).
+# Verifies the session itself and writes as the user, so RLS applies.
+[functions.import-image]
+verify_jwt = false

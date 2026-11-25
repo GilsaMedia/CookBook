@@ -7,7 +7,12 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts", "scripts/**/*.test.{ts,mjs}"],
+    include: [
+      "src/**/*.test.ts",
+      "scripts/**/*.test.{ts,mjs}",
+      "ai-server/**/*.test.mjs",
+      "supabase/functions/**/*.test.ts",
+    ],
     exclude: ["node_modules", ".next", "e2e"],
   },
 });

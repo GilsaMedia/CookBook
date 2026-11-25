@@ -1,0 +1,18 @@
+# systemd user service for the cookbook AI server. Install on the server:
+#   cp ai-server/cookbook-ai.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now cookbook-ai
+# (Needs `loginctl enable-linger <user>` so it runs without a login session.)
+[Unit]
+Description=Cookbook AI server (headless Claude Code)
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/apps/cookbook-ai
+EnvironmentFile=%h/apps/cookbook-ai/.env
+ExecStart=/usr/bin/node %h/apps/cookbook-ai/server.mjs
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

@@ -1,4 +1,5 @@
 import { findExcluded } from "@/lib/recipes/exclusions";
+import { normalizeHebrew } from "@/lib/search/hebrew";
 import type {
   CategorySummary,
   DishRole,
@@ -62,6 +63,10 @@ function card(
       ingredients.map(toText),
       exclusions,
     ),
+    ingredientNames: [
+      ...new Set(ingredients.map((i) => normalizeHebrew(i.canonical_name ?? i.display_text))),
+    ].filter(Boolean),
+    sourceUrl: r.source_url,
   };
 }
 
@@ -123,15 +128,14 @@ export function assembleRecipe(input: {
   const { recipe } = input;
   const ingredients = [...input.ingredients].sort((a, b) => a.position - b.position);
   const steps = [...input.steps].sort((a, b) => a.position - b.position);
-  // The page doesn't search, so drop the search text.
-  const { searchText: _searchText, ...base } = card(
-    recipe,
-    input.categoryName,
-    ingredients,
-    input.exclusions,
-    input.imageUrl,
-  );
-  void _searchText;
+  // The page doesn't search or check duplicates, so drop those fields.
+  const {
+    searchText: _searchText,
+    ingredientNames: _names,
+    sourceUrl: _sourceUrl,
+    ...base
+  } = card(recipe, input.categoryName, ingredients, input.exclusions, input.imageUrl);
+  void [_searchText, _names, _sourceUrl];
   return {
     ...base,
     imageCredit: input.imageCredit ?? null,
