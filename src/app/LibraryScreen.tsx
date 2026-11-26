@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAccess } from "@/components/auth/AuthProvider";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { BookSwitcher } from "@/components/library/BookSwitcher";
+import { HomeSections } from "@/components/library/HomeSections";
 import { LibraryView, type PickMode } from "@/components/library/LibraryView";
 import { useTray } from "@/components/meals/TrayProvider";
 import { he } from "@/i18n/he";
@@ -67,47 +68,50 @@ export function LibraryScreen() {
 
   const library = state.status === "ready" ? state.library : null;
 
+  const hero = library && (
+    <div className="flex flex-col gap-2 text-center">
+      {isDemo || !library.bookId ? (
+        <h1 className="text-3xl leading-tight font-bold">{library.bookName ?? he.app.name}</h1>
+      ) : (
+        <div className="flex justify-center">
+          <BookSwitcher
+            currentId={library.bookId}
+            currentName={library.bookName ?? he.app.name}
+            isOwner={!!library.isOwner}
+          />
+        </div>
+      )}
+      {library.recipes.length > 0 && (
+        <p className="text-sm opacity-90">{he.library.heroSub(library.recipes.length)}</p>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          {isDemo || !library?.bookId ? (
-            <h1 className="text-3xl leading-tight font-bold">{library?.bookName ?? he.app.name}</h1>
-          ) : (
-            <BookSwitcher
-              currentId={library.bookId}
-              currentName={library.bookName ?? he.app.name}
-              isOwner={!!library.isOwner}
-            />
+      {!isDemo && (
+        <div className="-mb-3 flex items-center justify-end gap-1">
+          {isAdmin && (
+            <Link
+              href="/requests"
+              className={`press flex h-11 items-center px-3 text-sm font-semibold ${
+                waiting ? "text-red-700" : "text-muted"
+              }`}
+            >
+              {waiting ? he.access.requestsCount(waiting) : he.access.requests}
+            </Link>
           )}
-          {library && library.recipes.length > 0 && (
-            <p className="text-sm text-muted">{he.library.count(library.recipes.length)}</p>
+          {library?.isOwner && library.recipes.length > 0 && (
+            <Link
+              href="/share"
+              className="press flex h-11 items-center px-3 text-sm font-semibold text-accent"
+            >
+              {he.library.share}
+            </Link>
           )}
+          <SignOutButton />
         </div>
-        {!isDemo && (
-          <div className="flex items-center gap-1">
-            {isAdmin && (
-              <Link
-                href="/requests"
-                className={`press flex h-11 items-center px-3 text-sm font-semibold ${
-                  waiting ? "text-red-700" : "text-muted"
-                }`}
-              >
-                {waiting ? he.access.requestsCount(waiting) : he.access.requests}
-              </Link>
-            )}
-            {library?.isOwner && library.recipes.length > 0 && (
-              <Link
-                href="/share"
-                className="press flex h-11 items-center px-3 text-sm font-semibold text-accent"
-              >
-                {he.library.share}
-              </Link>
-            )}
-            <SignOutButton />
-          </div>
-        )}
-      </header>
+      )}
       {synced.map((n) => (
         <p
           key={n.senderName}
@@ -143,7 +147,18 @@ export function LibraryScreen() {
           {he.common.loadFailed}
         </p>
       )}
-      {library && <LibraryView library={library} pick={pick} />}
+      {library && (
+        <LibraryView
+          library={library}
+          pick={pick}
+          hero={hero}
+          home={
+            library.bookId ? (
+              <HomeSections bookId={library.bookId} recipes={library.recipes} />
+            ) : undefined
+          }
+        />
+      )}
     </div>
   );
 }

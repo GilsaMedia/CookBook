@@ -37,3 +37,9 @@ export function nextFriday(today = new Date()): string {
   d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7));
   return toIsoDate(d);
 }
+
+/** "27.11.2026", from a date or a timestamp. */
+export const fullDate = (iso: string) => {
+  const d = iso.length === 10 ? parse(iso) : new Date(iso);
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+};

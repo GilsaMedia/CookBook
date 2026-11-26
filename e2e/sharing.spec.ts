@@ -39,7 +39,7 @@ test("Gil shares a recipe; Dana chooses it and gets a tagged copy in her own boo
   });
 
   await danaPage.getByRole("link", { name: "לספרייה" }).click();
-  const card = danaPage.getByRole("main").getByRole("listitem");
+  const card = danaPage.getByRole("list", { name: "מתכונים" }).getByRole("listitem");
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("סלט גזר מרוקאי");
   await expect(card).toContainText("שותף מגיל");

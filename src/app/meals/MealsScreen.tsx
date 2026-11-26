@@ -14,7 +14,8 @@ import { MealView } from "./MealView";
 export function MealsScreen() {
   const params = useSearchParams();
   const id = params.get("id");
-  if (id && params.get("view") === "page") return <MealPage key={id} id={id} />;
+  if (id && params.get("view") === "page")
+    return <MealPage key={id} id={id} print={params.get("print") === "1"} />;
   if (id) return <MealView key={id} id={id} />;
   return <MealList />;
 }

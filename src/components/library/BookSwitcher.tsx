@@ -76,7 +76,7 @@ export function BookSwitcher({
           {currentName}
           <svg
             aria-hidden="true"
-            className={`size-5 shrink-0 text-muted transition-transform ${open ? "rotate-180" : ""}`}
+            className={`size-5 shrink-0 opacity-70 transition-transform ${open ? "rotate-180" : ""}`}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -89,7 +89,7 @@ export function BookSwitcher({
       </h1>
 
       {open && (
-        <div className="absolute start-0 top-full z-30 mt-2 flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-2 rounded-2xl bg-white p-3 shadow-lg ring-1 ring-rule">
+        <div className="absolute start-1/2 top-full z-30 mt-2 flex w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 rounded-2xl bg-white p-3 text-start text-base font-normal text-ink shadow-lg ring-1 ring-rule rtl:translate-x-1/2">
           {mode === "list" ? (
             <>
               <ul className="flex flex-col">

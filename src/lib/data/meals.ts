@@ -7,6 +7,7 @@ import type { Database } from "@/lib/supabase/database.types";
  */
 
 export type MealStatus = Database["public"]["Enums"]["meal_status"];
+type DishRole = Database["public"]["Enums"]["dish_role"];
 
 export type MealSummary = {
   id: string;
@@ -14,6 +15,9 @@ export type MealSummary = {
   date: string | null;
   status: MealStatus;
   dishes: number;
+  /** Who opened it, and when (ISO). */
+  createdBy: string | null;
+  createdAt: string;
 };
 
 export type MealItem = {
@@ -24,6 +28,9 @@ export type MealItem = {
   title: string;
   servings: number | null;
   position: number;
+  addedBy: string | null;
+  dishRole: DishRole | null;
+  category: string | null;
 };
 
 export type Meal = MealSummary & { bookId: string; items: MealItem[] };
@@ -56,7 +63,7 @@ export async function getTray(bookId: string): Promise<{ id: string; count: numb
 export async function listMeals(bookId: string): Promise<MealSummary[]> {
   const { data, error } = await supabase()
     .from("meals")
-    .select("id, title, date, status, meal_items(count)")
+    .select("id, title, date, status, created_by, created_at, meal_items(count)")
     .eq("book_id", bookId)
     .order("date", { ascending: false, nullsFirst: true })
     .limit(100);
@@ -68,6 +75,8 @@ export async function listMeals(bookId: string): Promise<MealSummary[]> {
       date: m.date,
       status: m.status,
       dishes: (m.meal_items as unknown as { count: number }[])[0]?.count ?? 0,
+      createdBy: m.created_by,
+      createdAt: m.created_at,
     }))
     .sort((a, b) => Number(b.status === "draft") - Number(a.status === "draft"));
 }
@@ -76,7 +85,7 @@ export async function getMeal(id: string): Promise<Meal | null> {
   const { data, error } = await supabase()
     .from("meals")
     .select(
-      "id, book_id, title, date, status, meal_items(id, meal_id, book_id, recipe_id, servings, position, recipes(title))",
+      "id, book_id, title, date, status, created_by, created_at, meal_items(id, meal_id, book_id, recipe_id, servings, position, added_by, recipes(title, dish_role, categories(name)))",
     )
     .eq("id", id)
     .maybeSingle();
@@ -91,6 +100,9 @@ export async function getMeal(id: string): Promise<Meal | null> {
       title: i.recipes?.title ?? "",
       servings: i.servings,
       position: i.position,
+      addedBy: i.added_by,
+      dishRole: i.recipes?.dish_role ?? null,
+      category: i.recipes?.categories?.name ?? null,
     }))
     .sort((a, b) => a.position - b.position);
   return {
@@ -100,8 +112,31 @@ export async function getMeal(id: string): Promise<Meal | null> {
     date: data.date,
     status: data.status,
     dishes: items.length,
+    createdBy: data.created_by,
+    createdAt: data.created_at,
     items,
   };
+}
+
+/** Names of the book's members, by user id (for "נפתחה על ידי", "👤"). */
+export async function bookPeople(bookId: string): Promise<Map<string, string>> {
+  const { data, error } = await supabase().rpc("book_people", { p_book: bookId });
+  if (error) return new Map();
+  return new Map(data.map((p) => [p.user_id, p.name]));
+}
+
+/** Each dish's ingredients, for its "מצרכים" list. */
+export async function mealIngredients(recipeIds: string[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  if (recipeIds.length === 0) return out;
+  const { data, error } = await supabase()
+    .from("ingredients")
+    .select("recipe_id, display_text, position")
+    .in("recipe_id", recipeIds)
+    .order("position");
+  if (error) throw error;
+  for (const i of data) out.set(i.recipe_id, [...(out.get(i.recipe_id) ?? []), i.display_text]);
+  return out;
 }
 
 /** Saves the tray (or edits a meal): title, date and, for the tray, status 'done'. */
@@ -160,6 +195,7 @@ export async function removeItem(itemId: string) {
 export async function restoreItem(item: MealItem) {
   const { error } = await supabase().from("meal_items").insert({
     id: item.id,
+    added_by: item.addedBy,
     meal_id: item.mealId,
     book_id: item.bookId,
     recipe_id: item.recipeId,

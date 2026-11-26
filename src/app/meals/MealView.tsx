@@ -6,9 +6,15 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTray } from "@/components/meals/TrayProvider";
 import { SoonBadge } from "@/components/SoonBadge";
 import { he } from "@/i18n/he";
+import { getLibrary } from "@/lib/data";
 import {
+  addItem,
+  addToTray,
+  bookPeople,
   deleteMeal,
   getMeal,
+  mealIngredients,
+  recipeServings,
   removeItem,
   restoreItem,
   setServings,
@@ -16,7 +22,10 @@ import {
   type Meal,
   type MealItem,
 } from "@/lib/data/meals";
-import { defaultTitle, mealLabel, nextFriday } from "@/lib/meals/format";
+import { courseGaps } from "@/lib/meals/courses";
+import { defaultTitle, fullDate, mealLabel, nextFriday } from "@/lib/meals/format";
+import type { RecipeCard } from "@/lib/recipes/types";
+import { withBase } from "@/lib/demo";
 
 const UNDO_MS = 5000;
 const field =
@@ -35,15 +44,34 @@ export function MealView({ id }: { id: string }) {
   const [error, setError] = useState<string>();
   const [editing, setEditing] = useState(false);
   const [removed, setRemoved] = useState<MealItem | null>(null);
+  const [people, setPeople] = useState(new Map<string, string>());
+  const [ingredients, setIngredients] = useState(new Map<string, string[]>());
+  const [open, setOpen] = useState<string | null>(null);
+  const [library, setLibrary] = useState<RecipeCard[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = () => getMeal(id).then(setMeal, () => setMeal(null));
   useEffect(() => {
     getMeal(id).then(setMeal, () => setMeal(null));
+    getLibrary().then(
+      (l) => setLibrary(l.recipes),
+      () => {},
+    );
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
   }, [id]);
+
+  const bookId = meal?.bookId;
+  const recipeKey = meal?.items.map((i) => i.recipeId).join(",") ?? "";
+  useEffect(() => {
+    if (!bookId) return;
+    bookPeople(bookId).then(setPeople, () => {});
+  }, [bookId]);
+  useEffect(() => {
+    if (!recipeKey) return;
+    mealIngredients(recipeKey.split(",")).then(setIngredients, () => {});
+  }, [recipeKey]);
 
   if (meal === undefined)
     return <p className="py-16 text-center text-muted">{he.common.loading}</p>;
@@ -111,7 +139,7 @@ export function MealView({ id }: { id: string }) {
             );
             setEditing(false);
           }}
-          heading={isTray ? he.meals.trayTitle : undefined}
+          heading={isTray ? he.meals.trayHeading("") : undefined}
           disabled={!canPlan}
         />
       ) : (
@@ -128,19 +156,40 @@ export function MealView({ id }: { id: string }) {
           )}
         </header>
       )}
+      <div className="-mt-2 flex flex-col gap-2">
+        <p className="text-sm text-muted">
+          {he.meals.openedBy(
+            m.createdBy ? (people.get(m.createdBy) ?? null) : null,
+            fullDate(m.createdAt),
+          )}
+        </p>
+        <p className="text-sm text-muted">{he.meals.intro}</p>
+      </div>
 
       {m.items.length === 0 ? (
         <p className="text-muted">{he.meals.trayEmpty}</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul aria-label={he.meals.dishesLabel} className="flex flex-col gap-3">
           {m.items.map((item) => (
             <li
               key={item.id}
               className="flex flex-col gap-2 rounded-2xl bg-white p-4 ring-1 ring-rule"
             >
-              <Link href={`/recipe?id=${item.recipeId}`} className="text-lg font-semibold">
-                {item.title}
-              </Link>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <Link href={`/recipe?id=${item.recipeId}`} className="text-lg font-semibold">
+                  {item.title}
+                </Link>
+                <span className="text-sm text-muted">
+                  {[
+                    item.dishRole ? he.dishRole[item.dishRole] : item.category,
+                    item.addedBy && people.get(item.addedBy)
+                      ? `👤 ${people.get(item.addedBy)}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {canPlan && (
                   <button
@@ -168,6 +217,16 @@ export function MealView({ id }: { id: string }) {
                 )}
                 {canPlan && (
                   <div className="ms-auto flex gap-1">
+                    <button
+                      type="button"
+                      aria-expanded={open === item.id}
+                      onClick={() => setOpen(open === item.id ? null : item.id)}
+                      className={`${small} bg-paper ring-1 ring-rule`}
+                    >
+                      {open === item.id
+                        ? he.meals.hideIngredients
+                        : he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
+                    </button>
                     <Link
                       href={`/?pick=${item.id}&meal=${m.id}`}
                       aria-label={`${he.meals.swap}: ${item.title}`}
@@ -186,6 +245,13 @@ export function MealView({ id }: { id: string }) {
                   </div>
                 )}
               </div>
+              {open === item.id && (
+                <ul className="flex flex-col gap-1 border-t border-rule pt-2 text-sm">
+                  {(ingredients.get(item.recipeId) ?? []).map((line, n) => (
+                    <li key={n}>{line}</li>
+                  ))}
+                </ul>
+              )}
             </li>
           ))}
         </ul>
@@ -198,6 +264,19 @@ export function MealView({ id }: { id: string }) {
         >
           {he.meals.addDish}
         </Link>
+      )}
+      {canPlan && (
+        <Suggestions
+          meal={m}
+          library={library}
+          onAdd={(recipe) =>
+            act(async () =>
+              isTray
+                ? addToTray(recipe.id)
+                : addItem(m, recipe.id, await recipeServings(recipe.id)),
+            )
+          }
+        />
       )}
       <div className="flex gap-3">
         <button
@@ -216,6 +295,7 @@ export function MealView({ id }: { id: string }) {
           {he.meals.page}
         </Link>
       </div>
+      <ShareMeal meal={m} />
       {!isTray && canPlan && (
         <button
           type="button"
@@ -312,5 +392,107 @@ function SaveForm({
         </div>
       )}
     </form>
+  );
+}
+
+/** "מה עוד חסר": courses the meal is short of, with dishes from the book to add. */
+function Suggestions({
+  meal,
+  library,
+  onAdd,
+}: {
+  meal: Meal;
+  library: RecipeCard[];
+  onAdd: (recipe: RecipeCard) => Promise<void>;
+}) {
+  const gaps = courseGaps(meal, library);
+  if (gaps.length === 0) return null;
+  return (
+    <section aria-labelledby="missing" className="flex flex-col gap-4">
+      <h2 id="missing" className="text-xl font-bold">
+        {he.meals.missingTitle}
+      </h2>
+      {gaps.map((g) => (
+        <div key={g.role} className="flex flex-col gap-1">
+          <h3 className="font-bold">
+            {he.meals.course(he.meals.courses[g.role], g.have, g.target)}
+          </h3>
+          <ul className="flex flex-col divide-y divide-rule">
+            {g.suggestions.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate font-semibold">{r.title}</span>
+                  {r.categoryName && <span className="text-xs text-muted">{r.categoryName}</span>}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${he.meals.addSuggestion}: ${r.title}`}
+                  onClick={() => onAdd(r)}
+                  className="press h-11 shrink-0 rounded-full bg-white px-4 text-sm font-semibold ring-1 ring-rule"
+                >
+                  {he.meals.addSuggestion}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** "שיתוף הארוחה": the link, the dishes as text, WhatsApp, printing. */
+function ShareMeal({ meal }: { meal: Meal }) {
+  const [copied, setCopied] = useState<"link" | "text" | null>(null);
+  const link = new URL(withBase(`/meals?id=${meal.id}`), window.location.origin).toString();
+  const label = meal.status === "draft" ? he.meals.trayTitle : mealLabel(meal.title, meal.date);
+  const text = [
+    label,
+    ...meal.items.map(
+      (i) => `• ${i.title}${i.servings ? ` (${he.meals.servings(i.servings)})` : ""}`,
+    ),
+    link,
+  ].join("\n");
+
+  async function copy(what: "link" | "text") {
+    try {
+      await navigator.clipboard.writeText(what === "link" ? link : text);
+      setCopied(what);
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setCopied(null);
+    }
+  }
+
+  const button =
+    "press flex h-11 flex-1 items-center justify-center rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-rule";
+  return (
+    <section aria-labelledby="share-meal" className="flex flex-col gap-3 print:hidden">
+      <h2 id="share-meal" className="text-xl font-bold">
+        {he.meals.shareTitle}
+      </h2>
+      <p className="text-sm text-muted">{he.meals.shareIntro}</p>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => copy("link")} className={button}>
+          {copied === "link" ? he.meals.copied : he.meals.copyLink}
+        </button>
+        <button type="button" onClick={() => copy("text")} className={button}>
+          {copied === "text" ? he.meals.copied : he.meals.copyText}
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(text)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={button}
+        >
+          {he.meals.whatsapp}
+        </a>
+        <Link href={`/meals?id=${meal.id}&view=page&print=1`} className={button}>
+          {he.meals.print}
+        </Link>
+      </div>
+    </section>
   );
 }

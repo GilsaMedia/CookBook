@@ -25,6 +25,7 @@ export type RecipeRow = {
   cuisine: string | null;
   dish_role: DishRole | null;
   tags?: string[];
+  created_at?: string;
 };
 export type IngredientRow = {
   id: string;
@@ -69,6 +70,8 @@ function card(
     ].filter(Boolean),
     sourceUrl: r.source_url,
     tags: r.tags ?? [],
+    dishRole: r.dish_role,
+    createdAt: r.created_at ?? null,
   };
 }
 
@@ -135,9 +138,10 @@ export function assembleRecipe(input: {
     searchText: _searchText,
     ingredientNames: _names,
     sourceUrl: _sourceUrl,
+    createdAt: _createdAt,
     ...base
   } = card(recipe, input.categoryName, ingredients, input.exclusions, input.imageUrl);
-  void [_searchText, _names, _sourceUrl];
+  void [_searchText, _names, _sourceUrl, _createdAt];
   return {
     ...base,
     imageCredit: input.imageCredit ?? null,

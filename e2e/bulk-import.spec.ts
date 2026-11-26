@@ -137,7 +137,7 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
   await expect(page.getByText("נשמרו 3 מתכונים.")).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("link", { name: "לספרייה" }).click();
-  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(3);
+  await expect(page.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(3);
   await page.getByRole("link", { name: /מוסקה/ }).click();
   await expect(page.getByText("אופים בתנור על 160 מעלות שעה.")).toBeVisible();
 

@@ -24,7 +24,7 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
 
   await pill.click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("מגש הארוחה");
-  const dishes = page.getByRole("main").getByRole("listitem");
+  const dishes = page.getByRole("list", { name: "המנות בארוחה" }).getByRole("listitem");
   await expect(dishes).toHaveCount(6);
   await expect(page.getByLabel("שם הארוחה")).toHaveValue("ארוחת שישי");
   await page.getByRole("button", { name: "שמירת הארוחה" }).click();
@@ -53,10 +53,24 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(dishes).toHaveCount(6);
   await expect(dishes.first()).toContainText("שקשוקה");
 
+  // Who opened it, and each dish's ingredients on demand.
+  await expect(page.getByText(/^נפתחה על ידי /)).toBeVisible();
+  await page
+    .getByRole("button", { name: /^מצרכים \(\d+\)$/ })
+    .first()
+    .click();
+  await expect(page.getByRole("button", { name: "הסתרת המצרכים" })).toBeVisible();
+
   // Not built yet, and says so.
   await expect(page.getByRole("button", { name: "יצירת רשימת קניות · בקרוב" })).toBeDisabled();
 
   // The meal page: every dish in full.
   await page.getByRole("link", { name: "דף ארוחה" }).click();
   await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);
+
+  // The library's home shows the family's meals and the newest recipes.
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "הארוחות של המשפחה" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /ארוחת שישי · \d/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "נוספו לאחרונה ✨" })).toBeVisible();
 });

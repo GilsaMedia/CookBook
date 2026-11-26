@@ -12,7 +12,7 @@ async function signInWithSampleBook(page: Parameters<typeof signIn>[0]) {
 
 test("library → filter a category → recipe page with a safe source link", async ({ page }) => {
   await signInWithSampleBook(page);
-  const cards = page.getByRole("main").getByRole("listitem");
+  const cards = page.getByRole("list", { name: "מתכונים" }).getByRole("listitem");
   await expect(cards).toHaveCount(8);
 
   // Tapping a chip filters; tapping it again clears.
@@ -37,7 +37,10 @@ test("library → filter a category → recipe page with a safe source link", as
 test("searching the plural finds the singular ingredient", async ({ page }) => {
   await signInWithSampleBook(page);
   await page.getByRole("searchbox").fill("גזרים");
-  const titles = page.getByRole("main").getByRole("listitem").getByRole("heading");
+  const titles = page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("listitem")
+    .getByRole("heading");
   await expect(titles).toHaveText(["מרק עדשים כתומות", "סלט גזר מרוקאי"]);
 });
 

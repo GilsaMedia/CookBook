@@ -27,7 +27,7 @@ export function TrayPill() {
   return (
     <Link
       href={`/meals?id=${id}`}
-      className="press fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex h-11 w-fit items-center gap-1 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-lg"
+      className="press fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex h-11 w-fit items-center gap-1 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-lg print:hidden"
     >
       {he.meals.trayTitle} ·
       <motion.span

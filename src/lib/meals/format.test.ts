@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defaultTitle, mealLabel, nextFriday, shortDate, weekday } from "./format";
+import { defaultTitle, fullDate, mealLabel, nextFriday, shortDate, weekday } from "./format";
 
 describe("meal dates", () => {
   it("names the day and writes the date the Israeli way", () => {
@@ -9,6 +9,7 @@ describe("meal dates", () => {
     expect(mealLabel("ארוחת שישי", "2026-11-14")).toBe("ארוחת שישי · 14.11");
     expect(mealLabel("", "2026-11-27")).toBe("ארוחת שישי · 27.11");
     expect(mealLabel("יום הולדת", null)).toBe("יום הולדת");
+    expect(fullDate("2026-11-27")).toBe("27.11.2026");
   });
 
   it("defaults to the coming Friday", () => {
