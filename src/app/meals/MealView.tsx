@@ -172,41 +172,43 @@ export function MealView({ id }: { id: string }) {
         >
           {m.items.map((item) => (
             <li key={item.id} className="flex flex-col gap-3 py-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <Link href={`/recipe?id=${item.recipeId}`} className="text-lg font-bold">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <Link href={`/recipe?id=${item.recipeId}`} className="me-auto text-lg font-bold">
                   {item.title}
                 </Link>
-                <span className="text-sm text-muted">
-                  {[
-                    item.dishRole ? he.dishRole[item.dishRole] : item.category,
-                    item.addedBy && people.get(item.addedBy)
-                      ? `👤 ${people.get(item.addedBy)}`
-                      : null,
-                  ]
-                    .filter(Boolean)
-                    .join("  ")}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  aria-label={he.meals.ingredientsOf(item.title)}
-                  aria-expanded={open === item.id}
-                  onClick={() => setOpen(open === item.id ? null : item.id)}
-                  className={`${pill} ${open === item.id ? "bg-ink text-paper" : ""}`}
-                >
-                  {he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
-                </button>
-                {canPlan && (
-                  <button
-                    type="button"
-                    aria-label={`${he.meals.remove}: ${item.title}`}
-                    onClick={() => remove(item)}
-                    className={pill}
-                  >
-                    {he.meals.remove}
-                  </button>
-                )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                  <span className="text-sm text-muted">
+                    {[
+                      item.dishRole ? he.dishRole[item.dishRole] : item.category,
+                      item.addedBy && people.get(item.addedBy)
+                        ? `👤 ${people.get(item.addedBy)}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join("  ")}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      aria-label={he.meals.ingredientsOf(item.title)}
+                      aria-expanded={open === item.id}
+                      onClick={() => setOpen(open === item.id ? null : item.id)}
+                      className={`${pill} ${open === item.id ? "bg-ink text-paper" : ""}`}
+                    >
+                      {he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
+                    </button>
+                    {canPlan && (
+                      <button
+                        type="button"
+                        aria-label={`${he.meals.remove}: ${item.title}`}
+                        onClick={() => remove(item)}
+                        className={pill}
+                      >
+                        {he.meals.remove}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               {open === item.id && (
                 <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule">
@@ -430,11 +432,9 @@ function Suggestions({
           </h3>
           <ul className="flex flex-col divide-y divide-rule">
             {g.suggestions.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <span className="flex min-w-0 flex-wrap items-baseline gap-x-4">
-                  <span className="font-bold">{r.title}</span>
-                  {r.categoryName && <span className="text-sm text-muted">{r.categoryName}</span>}
-                </span>
+              <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                <span className="me-auto font-bold">{r.title}</span>
+                {r.categoryName && <span className="text-sm text-muted">{r.categoryName}</span>}
                 <button
                   type="button"
                   aria-label={`${he.meals.addSuggestion}: ${r.title}`}
@@ -498,7 +498,7 @@ function ShareMeal({ meal }: { meal: Meal }) {
         {he.meals.shareTitle}
       </h2>
       <p className="text-muted">{he.meals.shareIntro}</p>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <button type="button" onClick={() => copy("link")} className={rect}>
           {copyIcon}
           {copied === "link" ? he.meals.copied : he.meals.copyLink}
@@ -507,8 +507,6 @@ function ShareMeal({ meal }: { meal: Meal }) {
           {copyIcon}
           {copied === "text" ? he.meals.copied : he.meals.copyText}
         </button>
-      </div>
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
         <a
           href={`https://wa.me/?text=${encodeURIComponent(text)}`}
           target="_blank"
