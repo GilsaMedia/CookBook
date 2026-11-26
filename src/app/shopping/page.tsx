@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
-import { SoonBadge } from "@/components/SoonBadge";
+import { Suspense } from "react";
 import { he } from "@/i18n/he";
+import { ShoppingScreen } from "./ShoppingScreen";
 
 export const metadata: Metadata = { title: he.nav.shopping };
 
-/** "בקרוב" until the shopping list (prompt 7). */
+/** The shopping list of a meal: ?meal=<id>, else the active meal's. */
 export default function ShoppingPage() {
   return (
-    <div className="flex flex-col gap-3">
-      <h1 className="flex items-center gap-2 text-2xl font-semibold">
-        {he.nav.shopping}
-        <SoonBadge className="text-xs" />
-      </h1>
-      <p className="text-muted">{he.meals.shoppingSoon}</p>
-    </div>
+    <Suspense>
+      <ShoppingScreen />
+    </Suspense>
   );
 }

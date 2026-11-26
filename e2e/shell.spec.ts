@@ -10,8 +10,6 @@ test("app shell renders RTL Hebrew with four bottom tabs", async ({ page }) => {
 
   const nav = page.getByRole("navigation", { name: "ניווט ראשי" });
   await expect(nav.getByRole("link")).toHaveText(["ספרייה", "ארוחות", /קניות/, "הוספה"]);
-  // Not built yet: says so.
-  await expect(nav.getByRole("link", { name: /קניות/ })).toContainText("בקרוב");
   await expect(nav.getByRole("link", { name: "ספרייה" })).toHaveAttribute("aria-current", "page");
 
   await nav.getByRole("link", { name: "קניות" }).click();

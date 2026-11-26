@@ -183,7 +183,8 @@ export const he = {
       "פותחים כל מנה ורואים את המצרכים שלה, ושם גם משנים את מספר המנות או מחליפים אותה. ליד כל מנה רשום מי הוסיף אותה. רשימת הקניות תיבנה מהארוחה הזאת.",
     ingredientsOf: (title: string) => `מצרכים: ${title}`,
     servingsLabel: "מספר מנות",
-    ingredients: (n: number) => `מצרכים (${n})`,
+    ingredients: (home: number, n: number) => `מצרכים (${home}/${n} בבית)`,
+    atHome: "יש בבית",
     hideIngredients: "הסתרת המצרכים",
     missingTitle: "השלמת התפריט ✨",
     missingIntro:
@@ -207,7 +208,44 @@ export const he = {
     copied: "הועתק ✓",
     whatsapp: "וואטסאפ",
     print: "הדפסה / שמירה כ-PDF",
-    shoppingSoon: "רשימת הקניות החכמה בקרוב: מכל המנות של הארוחה, מסודרת לפי מחלקות בסופר.",
+  },
+  shopping: {
+    title: (label: string) => `רשימת קניות · ${label}`,
+    noMeal: "אין ארוחה פעילה. פותחים ארוחה ומוסיפים מנות, והרשימה נבנית ממנה.",
+    toMeals: "לארוחות",
+    toMeal: "לארוחה",
+    empty: "אין מה לקנות: הכול כבר בבית.",
+    sections: {
+      produce: "ירקות ופירות",
+      bakery: "לחם ומאפים",
+      dairy_eggs: "מוצרי חלב וביצים",
+      meat_fish: "בשר, עוף ודגים",
+      frozen: "קפואים",
+      canned_sauces: "שימורים, רטבים וממרחים",
+      dry_goods: "יבשים (פסטה, אורז, קטניות, דגנים)",
+      baking: "אפייה (קמח, סוכר, שמרים)",
+      spices_oils: "תבלינים ושמנים",
+      nuts_dried_fruit: "אגוזים ופירות יבשים",
+      drinks: "משקאות",
+      other: "אחר",
+    } as Record<string, string>,
+    amount: (q: number, unit: string) => {
+      const n = (x: number) => String(Math.round(x * 100) / 100);
+      if (unit === "g") return q >= 1000 ? `${n(q / 1000)} ק״ג` : `${n(q)} גרם`;
+      if (unit === "ml") return q >= 1000 ? `${n(q / 1000)} ליטר` : `${n(q)} מ״ל`;
+      return `${n(q)} יח׳`;
+    },
+    sources: (titles: string[]) => `(${titles.join(" + ")})`,
+    atHome: (n: number) => `כבר יש בבית (${n})`,
+    atHomeHint: "לחיצה על מצרך מחזירה אותו לרשימה.",
+    backOn: (name: string) => `״${name}״ חזר לרשימה`,
+    undo: "בטל",
+    share: "שיתוף",
+    print: "הדפסה",
+    done: "סיימתי",
+    copied: "הרשימה הועתקה",
+    finished: "הקניות הסתיימו ✓",
+    failed: "משהו השתבש. נסו שוב.",
   },
   books: {
     switchLabel: "החלפת ספר",
