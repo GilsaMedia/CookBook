@@ -23,7 +23,7 @@ import {
   type Meal,
   type MealItem,
 } from "@/lib/data/meals";
-import { courseStatus } from "@/lib/meals/courses";
+import { courseStatus, otherDishes } from "@/lib/meals/courses";
 import { defaultTitle, fullDate, mealLabel, nextFriday } from "@/lib/meals/format";
 import type { RecipeCard } from "@/lib/recipes/types";
 import { withBase } from "@/lib/demo";
@@ -416,6 +416,23 @@ function Suggestions({
   onAdd: (recipe: RecipeCard) => Promise<void>;
 }) {
   const courses = courseStatus(meal, library);
+  const other = otherDishes(meal.items);
+  const inMeal = (dishes: MealItem[]) =>
+    dishes.length > 0 && (
+      <ul className="flex flex-col gap-1 pb-1">
+        {dishes.map((d) => (
+          <li key={d.id} className="flex items-baseline gap-2">
+            <span aria-hidden="true" className="text-accent">
+              ✓
+            </span>
+            <Link href={`/recipe?id=${d.recipeId}`} className="font-medium">
+              {d.title}
+            </Link>
+            <span className="text-sm text-muted">{he.meals.inMeal}</span>
+          </li>
+        ))}
+      </ul>
+    );
   return (
     <section aria-labelledby="missing" className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -429,6 +446,7 @@ function Suggestions({
           <h3 className={`text-lg font-bold ${g.have >= g.target ? "text-muted" : ""}`}>
             {he.meals.course(he.meals.courses[g.course], g.have, g.target)}
           </h3>
+          {inMeal(g.dishes)}
           {g.suggestions.length > 0 && (
             <ul className="flex flex-col divide-y divide-rule">
               {g.suggestions.map((r) => (
@@ -445,6 +463,12 @@ function Suggestions({
                   </button>
                 </li>
               ))}
+              {other.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold text-muted">{he.meals.other}</h3>
+                  {inMeal(other)}
+                </div>
+              )}
             </ul>
           )}
         </div>

@@ -51,8 +51,10 @@ export function courseOf(dish: {
   return null;
 }
 
-export type CourseStatus = {
+export type CourseStatus<D> = {
   course: Course;
+  /** The meal's dishes in this course. */
+  dishes: D[];
   have: number;
   target: number;
   /** Dishes from the book for a course still short; empty when it's full. */
@@ -70,18 +72,18 @@ function seeded(seed: string) {
   };
 }
 
-export function courseStatus(
-  meal: {
-    id: string;
-    items: { recipeId: string; dishRole: DishRole | null; category: string | null }[];
-  },
+type Dish = { recipeId: string; dishRole: DishRole | null; category: string | null };
+
+export function courseStatus<D extends Dish>(
+  meal: { id: string; items: D[] },
   library: RecipeCard[],
   perCourse = 3,
-): CourseStatus[] {
+): CourseStatus<D>[] {
   const inMeal = new Set(meal.items.map((i) => i.recipeId));
   const rank = seeded(meal.id);
   return COURSES.map(({ course, target }) => {
-    const have = meal.items.filter((i) => courseOf(i) === course).length;
+    const dishes = meal.items.filter((i) => courseOf(i) === course);
+    const have = dishes.length;
     const suggestions =
       have >= target
         ? []
@@ -93,6 +95,10 @@ export function courseStatus(
             )
             .sort((a, b) => rank(a.id) - rank(b.id))
             .slice(0, perCourse);
-    return { course, have, target, suggestions };
+    return { course, dishes, have, target, suggestions };
   });
 }
+
+/** The meal's dishes that fill no course (sides, spreads, drinks). */
+export const otherDishes = <D extends Dish>(items: D[]) =>
+  items.filter((i) => courseOf(i) === null);

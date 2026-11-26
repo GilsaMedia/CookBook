@@ -58,6 +58,10 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(ingredients).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("button", { name: "עוד מנה: שקשוקה" })).toBeVisible();
 
+  // Each course lists the meal's dishes in it.
+  const menu = page.getByRole("region", { name: "השלמת התפריט ✨" });
+  await expect(menu.getByRole("link", { name: "מרק עדשים כתומות" })).toBeVisible();
+
   // Not built yet, and says so.
   await expect(page.getByRole("button", { name: "יצירת רשימת קניות · בקרוב" })).toBeDisabled();
 

@@ -195,6 +195,8 @@ export const he = {
       dessert: "קינוח",
     } as Record<string, string>,
     addSuggestion: "הוספה לארוחה",
+    other: "אחר",
+    inMeal: "בארוחה",
     shareTitle: "שיתוף הארוחה",
     shareIntro: "הקישור פותח ישר את הארוחה הזאת אצל כל מי שיש לו גישה לספר.",
     copyLink: "העתקת קישור",

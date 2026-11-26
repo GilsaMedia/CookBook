@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RecipeCard } from "@/lib/recipes/types";
-import { courseOf, courseStatus } from "./courses";
+import { courseOf, courseStatus, otherDishes } from "./courses";
 
 const card = (id: string, dishRole: RecipeCard["dishRole"], categoryName: string | null = null) =>
   ({ id, dishRole, categoryName }) as RecipeCard;
@@ -61,6 +61,11 @@ describe("courseStatus", () => {
     expect(status[0].suggestions.map((r) => r.id)).toEqual(["soup"]);
     expect(status[2].suggestions.map((r) => r.id).sort()).toEqual(["salad-2", "salad-3"]);
     expect(status[3].suggestions).toEqual([]); // the pastry is the dessert
+    expect(status[3].dishes.map((d) => d.recipeId)).toEqual(["hamantaschen"]);
+    expect(status[1].dishes.map((d) => d.recipeId)).toEqual(["chicken"]);
+    expect(
+      otherDishes([item("rice", "side"), item("chicken", "main")]).map((d) => d.recipeId),
+    ).toEqual(["rice"]);
   });
 
   it("suggests the same dishes each time for the same meal", () => {
