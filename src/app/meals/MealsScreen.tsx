@@ -65,7 +65,9 @@ function MealList() {
           href={`/meals?id=${m.id}`}
           className="press flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-3"
         >
-          <span className="font-semibold">{mealLabel(m.title, m.date) || he.meals.trayTitle}</span>
+          <span className="text-lg font-bold">
+            {mealLabel(m.title, m.date) || he.meals.trayTitle}
+          </span>
           <span className="text-sm text-muted">
             {he.library.mealMeta(
               m.date ? fullDate(m.date) : "",
@@ -88,17 +90,16 @@ function MealList() {
                 setFailed(true);
               }
             }}
-            className="press h-11 shrink-0 rounded-full px-3 text-sm font-semibold text-red-700"
+            className="press h-11 shrink-0 rounded-full px-3 text-sm text-muted"
           />
         )}
       </li>
     );
     const section = (title: string, hint: string | null, list: MealSummary[]) =>
       list.length > 0 && (
-        <section className="flex flex-col gap-1">
-          <h2 className="text-lg font-bold">
-            {title}
-            {hint && <span className="font-normal text-muted"> · {hint}</span>}
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl leading-snug font-bold text-accent">
+            {hint ? `${title} · ${hint}` : title}
           </h2>
           <ul className="flex flex-col divide-y divide-rule border-y border-rule">
             {list.map(row)}
@@ -106,8 +107,8 @@ function MealList() {
         </section>
       );
     body = (
-      <div className="flex flex-col gap-6">
-        <p className="text-sm text-muted">{he.library.familyMealsIntro}</p>
+      <div className="flex flex-col gap-8">
+        <p className="leading-relaxed text-muted">{he.library.familyMealsIntro}</p>
         {data.meals.length === 0 && <p className="text-muted">{he.meals.empty}</p>}
         {section(he.meals.activeTitle, he.meals.activeHint, active)}
         {section(he.meals.upcomingTitle, null, upcoming)}
@@ -128,7 +129,7 @@ function MealList() {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-3xl font-bold">{he.library.familyMeals}</h1>
+      <h1 className="text-3xl font-semibold text-accent">{he.library.familyMeals}</h1>
       {body}
     </div>
   );
@@ -162,10 +163,9 @@ function OpenMeal({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 border-t border-rule pt-5">
-      <h2 className="text-lg font-bold">{he.meals.openTitle}</h2>
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{he.meals.nameLabel}</span>
+    <form onSubmit={submit} className="flex flex-col gap-4 border-t border-rule pt-6">
+      <label className="flex flex-col gap-3">
+        <span className="text-muted">{he.meals.nameLabel}</span>
         <input
           value={title}
           maxLength={80}
@@ -174,8 +174,8 @@ function OpenMeal({
           className={field}
         />
       </label>
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">{he.meals.dateLabel}</span>
+      <label className="flex flex-col gap-3">
+        <span>{he.meals.dateLabel}</span>
         <input
           type="date"
           required
@@ -192,7 +192,7 @@ function OpenMeal({
       )}
       <button
         disabled={pending}
-        className="press h-12 rounded-full bg-ink font-semibold text-paper disabled:opacity-60"
+        className="press inline-flex h-12 items-center justify-center self-start rounded-full border border-rule px-6 text-base disabled:opacity-60"
       >
         {pending ? he.meals.opening : he.meals.open}
       </button>

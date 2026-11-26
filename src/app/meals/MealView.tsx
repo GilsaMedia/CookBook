@@ -32,11 +32,19 @@ const UNDO_MS = 5000;
 const field =
   "h-12 w-full rounded-xl border border-rule bg-white px-4 text-base outline-none focus:border-accent";
 const small = "press flex h-11 items-center rounded-full px-3 text-sm font-semibold";
+/** The outlined pill buttons of the meal screen ("מצרכים", "הסרה", "הוספה לארוחה"). */
+const pill =
+  "press inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-rule px-5 text-base";
+/** The outlined rectangular buttons ("יצירת רשימת קניות", "העתקת קישור"). */
+const rect =
+  "press inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-rule bg-white px-5 text-base shadow-sm";
 
 /**
- * One meal (screen 4): dishes with their servings, "החלפה", "הסרה" (with a
- * 5-second "בטל", no confirm dialog), "הוספת מנה +". The tray is saved here
- * with a name and a date.
+ * One meal (screen 4), laid out like the family's own meal page: the title
+ * and who opened it, the dishes (each with its kind, who added it,
+ * "מצרכים" and "הסרה", with a 5-second "בטל"), "השלמת התפריט", the
+ * shopping list, and sharing. A dish's servings and "החלפה" are in its
+ * "מצרכים" panel.
  */
 export function MealView({ id }: { id: string }) {
   const router = useRouter();
@@ -123,7 +131,7 @@ export function MealView({ id }: { id: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <Link
         href="/meals"
         className="press -my-2 flex h-11 w-fit items-center text-sm font-medium text-muted"
@@ -141,47 +149,31 @@ export function MealView({ id }: { id: string }) {
           onCancel={() => setEditing(false)}
         />
       ) : (
-        <header className="flex flex-col gap-1">
-          <h1 className="text-3xl leading-tight font-bold">
+        <header className="flex flex-col gap-3">
+          <h1 className="text-3xl leading-tight font-semibold text-accent">
             {isTray ? he.meals.trayHeading(mealLabel(m.title, m.date)) : mealLabel(m.title, m.date)}
           </h1>
-          {isTray && (
-            <p className="font-semibold text-accent">
-              {he.meals.activeTitle} · {he.meals.activeHint}
-            </p>
-          )}
-          {canPlan && (
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className={`${small} w-fit px-0 text-accent`}
-            >
-              {he.meals.edit}
-            </button>
-          )}
+          <p className="text-sm text-muted">
+            {he.meals.openedBy(
+              m.createdBy ? (people.get(m.createdBy) ?? null) : null,
+              fullDate(m.createdAt),
+            )}
+          </p>
         </header>
       )}
-      <div className="-mt-2 flex flex-col gap-2">
-        <p className="text-sm text-muted">
-          {he.meals.openedBy(
-            m.createdBy ? (people.get(m.createdBy) ?? null) : null,
-            fullDate(m.createdAt),
-          )}
-        </p>
-        <p className="text-sm text-muted">{he.meals.intro}</p>
-      </div>
+      <p className="leading-relaxed text-muted">{he.meals.intro}</p>
 
       {m.items.length === 0 ? (
-        <p className="text-muted">{he.meals.trayEmpty}</p>
+        <p className="border-t border-rule pt-4 text-muted">{he.meals.trayEmpty}</p>
       ) : (
-        <ul aria-label={he.meals.dishesLabel} className="flex flex-col gap-3">
+        <ul
+          aria-label={he.meals.dishesLabel}
+          className="flex flex-col divide-y divide-rule border-y border-rule"
+        >
           {m.items.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-2 rounded-2xl bg-white p-4 ring-1 ring-rule"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <Link href={`/recipe?id=${item.recipeId}`} className="text-lg font-semibold">
+            <li key={item.id} className="flex flex-col gap-3 py-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <Link href={`/recipe?id=${item.recipeId}`} className="text-lg font-bold">
                   {item.title}
                 </Link>
                 <span className="text-sm text-muted">
@@ -192,70 +184,74 @@ export function MealView({ id }: { id: string }) {
                       : null,
                   ]
                     .filter(Boolean)
-                    .join(" · ")}
+                    .join("  ")}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-label={he.meals.ingredientsOf(item.title)}
+                  aria-expanded={open === item.id}
+                  onClick={() => setOpen(open === item.id ? null : item.id)}
+                  className={`${pill} ${open === item.id ? "bg-ink text-paper" : ""}`}
+                >
+                  {he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
+                </button>
                 {canPlan && (
                   <button
                     type="button"
-                    aria-label={he.meals.less(item.title)}
-                    disabled={!item.servings || item.servings <= 1}
-                    onClick={() => act(() => setServings(item.id, (item.servings ?? 2) - 1))}
-                    className="press flex size-11 items-center justify-center rounded-full bg-paper text-lg font-bold ring-1 ring-rule disabled:opacity-40"
+                    aria-label={`${he.meals.remove}: ${item.title}`}
+                    onClick={() => remove(item)}
+                    className={pill}
                   >
-                    −
+                    {he.meals.remove}
                   </button>
-                )}
-                <span className="min-w-16 text-center text-sm tabular-nums">
-                  {item.servings ? he.meals.servings(item.servings) : he.meals.noServings}
-                </span>
-                {canPlan && (
-                  <button
-                    type="button"
-                    aria-label={he.meals.more(item.title)}
-                    onClick={() => act(() => setServings(item.id, (item.servings ?? 0) + 1))}
-                    className="press flex size-11 items-center justify-center rounded-full bg-paper text-lg font-bold ring-1 ring-rule"
-                  >
-                    +
-                  </button>
-                )}
-                {canPlan && (
-                  <div className="ms-auto flex gap-1">
-                    <button
-                      type="button"
-                      aria-expanded={open === item.id}
-                      onClick={() => setOpen(open === item.id ? null : item.id)}
-                      className={`${small} bg-paper ring-1 ring-rule`}
-                    >
-                      {open === item.id
-                        ? he.meals.hideIngredients
-                        : he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
-                    </button>
-                    <Link
-                      href={`/?pick=${item.id}&meal=${m.id}`}
-                      aria-label={`${he.meals.swap}: ${item.title}`}
-                      className={`${small} bg-paper ring-1 ring-rule`}
-                    >
-                      {he.meals.swap}
-                    </Link>
-                    <button
-                      type="button"
-                      aria-label={`${he.meals.remove}: ${item.title}`}
-                      onClick={() => remove(item)}
-                      className={`${small} text-red-700`}
-                    >
-                      {he.meals.remove}
-                    </button>
-                  </div>
                 )}
               </div>
               {open === item.id && (
-                <ul className="flex flex-col gap-1 border-t border-rule pt-2 text-sm">
-                  {(ingredients.get(item.recipeId) ?? []).map((line, n) => (
-                    <li key={n}>{line}</li>
-                  ))}
-                </ul>
+                <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{he.meals.servingsLabel}</span>
+                    {canPlan && (
+                      <button
+                        type="button"
+                        aria-label={he.meals.less(item.title)}
+                        disabled={!item.servings || item.servings <= 1}
+                        onClick={() => act(() => setServings(item.id, (item.servings ?? 2) - 1))}
+                        className="press flex size-11 items-center justify-center rounded-full border border-rule text-lg font-bold disabled:opacity-40"
+                      >
+                        −
+                      </button>
+                    )}
+                    <span className="min-w-16 text-center text-sm tabular-nums">
+                      {item.servings ? he.meals.servings(item.servings) : he.meals.noServings}
+                    </span>
+                    {canPlan && (
+                      <button
+                        type="button"
+                        aria-label={he.meals.more(item.title)}
+                        onClick={() => act(() => setServings(item.id, (item.servings ?? 0) + 1))}
+                        className="press flex size-11 items-center justify-center rounded-full border border-rule text-lg font-bold"
+                      >
+                        +
+                      </button>
+                    )}
+                    {canPlan && (
+                      <Link
+                        href={`/?pick=${item.id}&meal=${m.id}`}
+                        aria-label={`${he.meals.swap}: ${item.title}`}
+                        className={`${pill} ms-auto`}
+                      >
+                        {he.meals.swap}
+                      </Link>
+                    )}
+                  </div>
+                  <ul className="flex flex-col gap-1 border-t border-rule pt-3 text-sm">
+                    {(ingredients.get(item.recipeId) ?? []).map((line, n) => (
+                      <li key={n}>{line}</li>
+                    ))}
+                  </ul>
+                </div>
               )}
             </li>
           ))}
@@ -263,10 +259,7 @@ export function MealView({ id }: { id: string }) {
       )}
 
       {canPlan && (
-        <Link
-          href={`/?add=${m.id}`}
-          className="press flex h-12 items-center justify-center rounded-full bg-white font-semibold ring-1 ring-rule"
-        >
+        <Link href={`/?add=${m.id}`} className={`${pill} self-start`}>
           {he.meals.addDish}
         </Link>
       )}
@@ -283,39 +276,44 @@ export function MealView({ id }: { id: string }) {
           }
         />
       )}
-      <div className="flex gap-3">
+
+      <div className="flex flex-wrap gap-3">
         <button
           type="button"
           disabled
           aria-label={`${he.meals.shopping} · ${he.common.soon}`}
-          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-accent/40 font-semibold text-white"
+          className={`${rect} text-muted`}
         >
           {he.meals.shopping}
-          <SoonBadge className="bg-white/90" />
+          <SoonBadge />
         </button>
-        <Link
-          href={`/meals?id=${m.id}&view=page`}
-          className="press flex h-12 flex-1 items-center justify-center rounded-full bg-white font-semibold ring-1 ring-rule"
-        >
+        <Link href={`/meals?id=${m.id}&view=page`} className={rect}>
           {he.meals.page}
         </Link>
       </div>
+
       <ShareMeal meal={m} />
+
       {canPlan && (
-        <ConfirmButton
-          label={he.meals.delete}
-          confirm={he.meals.deleteAsk}
-          onConfirm={async () => {
-            try {
-              await deleteMeal(m.id);
-              tray.refresh();
-              router.push("/meals");
-            } catch {
-              setError(he.meals.failed);
-            }
-          }}
-          className={`${small} self-start px-4 text-red-700`}
-        />
+        <div className="flex flex-wrap gap-2 border-t border-rule pt-4">
+          <button type="button" onClick={() => setEditing(true)} className={`${small} text-accent`}>
+            {he.meals.edit}
+          </button>
+          <ConfirmButton
+            label={he.meals.delete}
+            confirm={he.meals.deleteAsk}
+            onConfirm={async () => {
+              try {
+                await deleteMeal(m.id);
+                tray.refresh();
+                router.push("/meals");
+              } catch {
+                setError(he.meals.failed);
+              }
+            }}
+            className={`${small} text-red-700`}
+          />
+        </div>
       )}
 
       {error && (
@@ -418,30 +416,30 @@ function Suggestions({
   const gaps = courseGaps(meal, library);
   if (gaps.length === 0) return null;
   return (
-    <section aria-labelledby="missing" className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 id="missing" className="text-xl font-bold">
+    <section aria-labelledby="missing" className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <h2 id="missing" className="text-2xl font-semibold text-accent">
           {he.meals.missingTitle}
         </h2>
-        <p className="text-sm text-muted">{he.meals.missingIntro}</p>
+        <p className="leading-relaxed text-muted">{he.meals.missingIntro}</p>
       </div>
       {gaps.map((g) => (
         <div key={g.role} className="flex flex-col gap-1">
-          <h3 className="font-bold">
+          <h3 className="text-lg font-bold">
             {he.meals.course(he.meals.courses[g.role], g.have, g.target)}
           </h3>
           <ul className="flex flex-col divide-y divide-rule">
             {g.suggestions.map((r) => (
-              <li key={r.id} className="flex items-center justify-between gap-3 py-2">
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate font-semibold">{r.title}</span>
-                  {r.categoryName && <span className="text-xs text-muted">{r.categoryName}</span>}
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <span className="flex min-w-0 flex-wrap items-baseline gap-x-4">
+                  <span className="font-bold">{r.title}</span>
+                  {r.categoryName && <span className="text-sm text-muted">{r.categoryName}</span>}
                 </span>
                 <button
                   type="button"
                   aria-label={`${he.meals.addSuggestion}: ${r.title}`}
                   onClick={() => onAdd(r)}
-                  className="press h-11 shrink-0 rounded-full bg-white px-4 text-sm font-semibold ring-1 ring-rule"
+                  className={pill}
                 >
                   {he.meals.addSuggestion}
                 </button>
@@ -477,33 +475,53 @@ function ShareMeal({ meal }: { meal: Meal }) {
     }
   }
 
-  const button =
-    "press flex h-11 flex-1 items-center justify-center rounded-xl bg-white px-3 text-sm font-semibold ring-1 ring-rule";
+  const copyIcon = (
+    <svg
+      aria-hidden="true"
+      className="size-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinejoin="round"
+    >
+      <rect x="8" y="8" width="12" height="12" rx="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+    </svg>
+  );
   return (
-    <section aria-labelledby="share-meal" className="flex flex-col gap-3 print:hidden">
-      <h2 id="share-meal" className="text-xl font-bold">
+    <section
+      aria-labelledby="share-meal"
+      className="flex flex-col gap-4 border-t border-rule pt-6 print:hidden"
+    >
+      <h2 id="share-meal" className="text-2xl font-semibold text-accent">
         {he.meals.shareTitle}
       </h2>
-      <p className="text-sm text-muted">{he.meals.shareIntro}</p>
-      <div className="flex gap-2">
-        <button type="button" onClick={() => copy("link")} className={button}>
+      <p className="text-muted">{he.meals.shareIntro}</p>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={() => copy("link")} className={rect}>
+          {copyIcon}
           {copied === "link" ? he.meals.copied : he.meals.copyLink}
         </button>
-        <button type="button" onClick={() => copy("text")} className={button}>
+        <button type="button" onClick={() => copy("text")} className={rect}>
+          {copyIcon}
           {copied === "text" ? he.meals.copied : he.meals.copyText}
         </button>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
         <a
           href={`https://wa.me/?text=${encodeURIComponent(text)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={button}
+          className="press flex h-11 items-center underline underline-offset-4"
         >
           {he.meals.whatsapp}
         </a>
-        <Link href={`/meals?id=${meal.id}&view=page&print=1`} className={button}>
-          {he.meals.print}
+        <Link
+          href={`/meals?id=${meal.id}&view=page&print=1`}
+          className="press flex h-11 items-center gap-1 font-semibold"
+        >
+          <span aria-hidden="true">🖨️</span> {he.meals.print}
         </Link>
       </div>
     </section>
