@@ -25,7 +25,7 @@ test("signed-out visitors are sent to /login and come back after signing up", as
   await approve(email);
   await page.getByRole("button", { name: "לבדוק שוב" }).click();
   await expect(page).toHaveURL(/\/meals$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("ארוחות");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("הארוחות של המשפחה");
   await expect(page.getByRole("navigation", { name: "ניווט ראשי" })).toBeVisible();
 
   // Signed in: /login bounces home.
