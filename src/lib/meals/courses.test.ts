@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { RecipeCard } from "@/lib/recipes/types";
-import { courseGaps } from "./courses";
+import { courseOf, courseStatus } from "./courses";
 
-const card = (id: string, dishRole: RecipeCard["dishRole"]) => ({ id, dishRole }) as RecipeCard;
+const card = (id: string, dishRole: RecipeCard["dishRole"], categoryName: string | null = null) =>
+  ({ id, dishRole, categoryName }) as RecipeCard;
 const library = [
   card("soup", "soup"),
   card("chicken", "main"),
@@ -11,33 +12,61 @@ const library = [
   card("salad-3", "salad"),
   card("cake", "dessert"),
 ];
+const item = (
+  recipeId: string,
+  dishRole: RecipeCard["dishRole"],
+  category: string | null = null,
+) => ({
+  recipeId,
+  dishRole,
+  category,
+});
 
-describe("courseGaps", () => {
-  it("lists the courses still missing, with dishes not already in the meal", () => {
-    const gaps = courseGaps(
+describe("courseOf", () => {
+  it("puts every kind of dish in its course", () => {
+    expect(courseOf({ dishRole: "pastry", category: "קינוחים, עוגות ועוגיות" })).toBe("dessert");
+    expect(courseOf({ dishRole: "pastry", category: null })).toBe("dessert");
+    expect(courseOf({ dishRole: "pastry", category: "פשטידות ומאפים מלוחים" })).toBe("first");
+    expect(courseOf({ dishRole: "soup", category: null })).toBe("first");
+    expect(courseOf({ dishRole: "side", category: "תוספות" })).toBeNull();
+  });
+
+  it("falls back on the category's name", () => {
+    expect(courseOf({ dishRole: null, category: "מרקים" })).toBe("first");
+    expect(courseOf({ dishRole: null, category: "סלטים" })).toBe("salad");
+    expect(courseOf({ dishRole: null, category: "עוף" })).toBe("main");
+    expect(courseOf({ dishRole: null, category: "קינוחים, עוגות ועוגיות" })).toBe("dessert");
+  });
+});
+
+describe("courseStatus", () => {
+  it("shows every course with how many it has, and suggestions for the short ones", () => {
+    const status = courseStatus(
       {
         id: "m1",
         items: [
-          { recipeId: "chicken", dishRole: "main" },
-          { recipeId: "salad-1", dishRole: "salad" },
+          item("chicken", "main"),
+          item("salad-1", "salad"),
+          item("hamantaschen", "pastry", "קינוחים, עוגות ועוגיות"),
         ],
       },
       library,
     );
-    // No soup yet; one of two mains, but no other main in the book; one of
-    // two salads; no dessert yet.
-    expect(gaps.map((g) => [g.role, g.have, g.target])).toEqual([
-      ["soup", 0, 1],
+    expect(status.map((s) => [s.course, s.have, s.target])).toEqual([
+      ["first", 0, 1],
+      ["main", 1, 2],
       ["salad", 1, 2],
-      ["dessert", 0, 1],
+      ["dessert", 1, 1],
     ]);
-    expect(gaps[1].suggestions.map((r) => r.id).sort()).toEqual(["salad-2", "salad-3"]);
+    expect(status[0].suggestions.map((r) => r.id)).toEqual(["soup"]);
+    expect(status[2].suggestions.map((r) => r.id).sort()).toEqual(["salad-2", "salad-3"]);
+    expect(status[3].suggestions).toEqual([]); // the pastry is the dessert
   });
 
   it("suggests the same dishes each time for the same meal", () => {
     const meal = { id: "m2", items: [] };
-    const first = courseGaps(meal, library, 1).map((g) => g.suggestions[0].id);
-    expect(courseGaps(meal, [...library].reverse(), 1).map((g) => g.suggestions[0].id)).toEqual(
+    const first = courseStatus(meal, library, 1).map((g) => g.suggestions[0]?.id);
+    expect(courseStatus(meal, [...library].reverse(), 1).map((g) => g.suggestions[0]?.id)).toEqual(
       first,
     );
   });

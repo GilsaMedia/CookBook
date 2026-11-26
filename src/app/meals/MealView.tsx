@@ -23,7 +23,7 @@ import {
   type Meal,
   type MealItem,
 } from "@/lib/data/meals";
-import { courseGaps } from "@/lib/meals/courses";
+import { courseStatus } from "@/lib/meals/courses";
 import { defaultTitle, fullDate, mealLabel, nextFriday } from "@/lib/meals/format";
 import type { RecipeCard } from "@/lib/recipes/types";
 import { withBase } from "@/lib/demo";
@@ -415,8 +415,7 @@ function Suggestions({
   library: RecipeCard[];
   onAdd: (recipe: RecipeCard) => Promise<void>;
 }) {
-  const gaps = courseGaps(meal, library);
-  if (gaps.length === 0) return null;
+  const courses = courseStatus(meal, library);
   return (
     <section aria-labelledby="missing" className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
@@ -425,27 +424,29 @@ function Suggestions({
         </h2>
         <p className="leading-relaxed text-muted">{he.meals.missingIntro}</p>
       </div>
-      {gaps.map((g) => (
-        <div key={g.role} className="flex flex-col gap-1">
-          <h3 className="text-lg font-bold">
-            {he.meals.course(he.meals.courses[g.role], g.have, g.target)}
+      {courses.map((g) => (
+        <div key={g.course} className="flex flex-col gap-1">
+          <h3 className={`text-lg font-bold ${g.have >= g.target ? "text-muted" : ""}`}>
+            {he.meals.course(he.meals.courses[g.course], g.have, g.target)}
           </h3>
-          <ul className="flex flex-col divide-y divide-rule">
-            {g.suggestions.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
-                <span className="me-auto font-bold">{r.title}</span>
-                {r.categoryName && <span className="text-sm text-muted">{r.categoryName}</span>}
-                <button
-                  type="button"
-                  aria-label={`${he.meals.addSuggestion}: ${r.title}`}
-                  onClick={() => onAdd(r)}
-                  className={pill}
-                >
-                  {he.meals.addSuggestion}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {g.suggestions.length > 0 && (
+            <ul className="flex flex-col divide-y divide-rule">
+              {g.suggestions.map((r) => (
+                <li key={r.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+                  <span className="me-auto font-bold">{r.title}</span>
+                  {r.categoryName && <span className="text-sm text-muted">{r.categoryName}</span>}
+                  <button
+                    type="button"
+                    aria-label={`${he.meals.addSuggestion}: ${r.title}`}
+                    onClick={() => onAdd(r)}
+                    className={pill}
+                  >
+                    {he.meals.addSuggestion}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       ))}
     </section>

@@ -1,21 +1,61 @@
 import type { DishRole, RecipeCard } from "@/lib/recipes/types";
 
 /**
- * What a family meal usually has (PRD §13.1, a first step toward the menu
- * builder): a first course or soup, two mains, two salads and a dessert. the meal screen shows the courses still missing, with a few
- * dishes of that kind from the book to add.
+ * The family's menu (PRD §13.1, a first step toward the menu builder): a
+ * first course or soup, two mains, two salads and a dessert. The meal
+ * screen shows every course with how many it has, and dishes from the book
+ * for the ones still short.
  */
-export const COURSES: { role: DishRole; target: number }[] = [
-  { role: "soup", target: 1 },
-  { role: "main", target: 2 },
-  { role: "salad", target: 2 },
-  { role: "dessert", target: 1 },
+export type Course = "first" | "main" | "salad" | "dessert";
+
+export const COURSES: { course: Course; target: number }[] = [
+  { course: "first", target: 1 },
+  { course: "main", target: 2 },
+  { course: "salad", target: 2 },
+  { course: "dessert", target: 1 },
 ];
 
-export type CourseGap = {
-  role: DishRole;
+const SWEET = /קינוח|עוג|מתוק|פודינג|טארט|מאפינס/;
+const SAVORY = /מלוח|פשטיד|לחמ|בצק|פיצ/;
+
+/**
+ * Which course a dish fills: by its kind, else by its category's name.
+ * Sweet pastries are dessert, savory ones a first course; sides, spreads
+ * and drinks fill none.
+ */
+export function courseOf(dish: {
+  dishRole: DishRole | null;
+  category: string | null;
+}): Course | null {
+  const category = dish.category ?? "";
+  switch (dish.dishRole) {
+    case "soup":
+      return "first";
+    case "main":
+      return "main";
+    case "salad":
+      return "salad";
+    case "dessert":
+      return "dessert";
+    case "pastry":
+      return SAVORY.test(category) && !SWEET.test(category) ? "first" : "dessert";
+    case "side":
+    case "spread":
+    case "drink":
+      return null;
+  }
+  if (/מרק/.test(category)) return "first";
+  if (/סלט/.test(category)) return "salad";
+  if (SWEET.test(category)) return "dessert";
+  if (/עיקרי|בשר|עוף|דג/.test(category)) return "main";
+  return null;
+}
+
+export type CourseStatus = {
+  course: Course;
   have: number;
   target: number;
+  /** Dishes from the book for a course still short; empty when it's full. */
   suggestions: RecipeCard[];
 };
 
@@ -30,19 +70,29 @@ function seeded(seed: string) {
   };
 }
 
-export function courseGaps(
-  meal: { id: string; items: { recipeId: string; dishRole: DishRole | null }[] },
+export function courseStatus(
+  meal: {
+    id: string;
+    items: { recipeId: string; dishRole: DishRole | null; category: string | null }[];
+  },
   library: RecipeCard[],
   perCourse = 3,
-): CourseGap[] {
+): CourseStatus[] {
   const inMeal = new Set(meal.items.map((i) => i.recipeId));
   const rank = seeded(meal.id);
-  return COURSES.map(({ role, target }) => {
-    const have = meal.items.filter((i) => i.dishRole === role).length;
-    const suggestions = library
-      .filter((r) => r.dishRole === role && !inMeal.has(r.id))
-      .sort((a, b) => rank(a.id) - rank(b.id))
-      .slice(0, perCourse);
-    return { role, have, target, suggestions };
-  }).filter((g) => g.have < g.target && g.suggestions.length > 0);
+  return COURSES.map(({ course, target }) => {
+    const have = meal.items.filter((i) => courseOf(i) === course).length;
+    const suggestions =
+      have >= target
+        ? []
+        : library
+            .filter(
+              (r) =>
+                !inMeal.has(r.id) &&
+                courseOf({ dishRole: r.dishRole, category: r.categoryName }) === course,
+            )
+            .sort((a, b) => rank(a.id) - rank(b.id))
+            .slice(0, perCourse);
+    return { course, have, target, suggestions };
+  });
 }

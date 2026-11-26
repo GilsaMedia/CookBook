@@ -185,9 +185,10 @@ export const he = {
     missingTitle: "השלמת התפריט ✨",
     missingIntro:
       "לפי המבנה הקבוע: מנה ראשונה או מרק, שתי מנות עיקריות, שני סלטים וקינוח. הצעות מהספר נוספות לארוחה בלחיצה.",
-    course: (label: string, have: number, target: number) => `${label} · יש ${have} מתוך ${target}`,
+    course: (label: string, have: number, target: number) =>
+      `${label} · יש ${have} מתוך ${target}${have >= target ? " ✓" : ""}`,
     courses: {
-      soup: "מנה ראשונה / מרק",
+      first: "מנה ראשונה / מרק",
       main: "מנות עיקריות",
       side: "תוספות",
       salad: "סלטים",
