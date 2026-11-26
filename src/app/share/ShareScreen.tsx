@@ -11,6 +11,7 @@ import {
   getMyName,
   isEmail,
   normalizeEmail,
+  createShareLink,
   sentShares,
   ShareError,
   shareRecipes,
@@ -96,9 +97,14 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
   const [error, setError] = useState<string>();
   const [pending, setPending] = useState(false);
   const [done, setDone] = useState<string[] | null>(null);
+  const [how, setHow] = useState<"link" | "email">("link");
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const visible = useMemo(() => searchItems(recipes, query, (r) => r.searchText), [recipes, query]);
-  const previous = [...new Set(sent.map((s) => s.toEmail))].filter((e) => !emails.includes(e));
+  const previous = [...new Set(sent.map((s) => s.toEmail).filter((e): e is string => !!e))].filter(
+    (e) => !emails.includes(e),
+  );
 
   function addEmail(e?: FormEvent) {
     e?.preventDefault();
@@ -117,7 +123,33 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
     setSelected(next);
   }
 
+  async function makeLink() {
+    if (mode === "chosen" && selected.size === 0) return setError(he.share.errors.noRecipes);
+    if (!name.trim()) return setError(he.share.errors.noName);
+    setPending(true);
+    setError(undefined);
+    try {
+      const url = await createShareLink({
+        book,
+        recipeIds: mode === "book" ? null : [...selected],
+        senderName: name,
+        canAdd: mode === "book" && canAdd,
+        origin: window.location.origin,
+        path: (token) => withBase(`/shared?t=${encodeURIComponent(token)}`),
+      });
+      setLink(url);
+      setCopied(false);
+      setSent(await sentShares(book.id));
+    } catch (e) {
+      const code = e instanceof ShareError ? e.message : "default";
+      setError(he.share.errors[code] ?? he.share.errors.default);
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function share() {
+    if (how === "link") return makeLink();
     // A typed address counts even if "add" wasn't pressed.
     const typed = normalizeEmail(emailInput);
     const people = typed && isEmail(typed) && !emails.includes(typed) ? [...emails, typed] : emails;
@@ -181,8 +213,8 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
         {sent.map((s) => (
           <li key={s.id} className="flex items-center gap-3 px-4 py-3 text-sm">
             <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate font-medium" dir="ltr">
-                {s.toEmail}
+              <span className="truncate font-medium" dir={s.toEmail ? "ltr" : undefined}>
+                {s.byLink ? `${he.share.sentLink} · ${s.toEmail ?? he.share.notOpened}` : s.toEmail}
               </span>
               <span className="text-muted">
                 {s.canAdd ? he.share.sentJoin : he.share.sentWhat(s.recipeCount)} ·{" "}
@@ -243,6 +275,74 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
       </ul>
     </section>
   );
+
+  if (link) {
+    const message = he.share.linkMessage(name.trim(), link);
+    return (
+      <div className="flex flex-col gap-5">
+        <section className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule">
+          <h2 className="text-xl font-bold">{he.share.linkTitle}</h2>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm text-muted">{he.share.linkLabel}</span>
+            <input
+              readOnly
+              value={link}
+              dir="ltr"
+              onFocus={(e) => e.target.select()}
+              className="h-12 w-full rounded-xl border border-rule bg-paper px-3 text-sm"
+            />
+          </label>
+          <p className="text-sm text-muted">{he.share.linkHint}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(link);
+                  setCopied(true);
+                } catch {
+                  setCopied(false);
+                }
+              }}
+              className="press h-12 flex-1 rounded-full bg-white font-semibold ring-1 ring-rule"
+            >
+              {copied ? he.share.copied : he.share.copyLink}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  if (navigator.share) await navigator.share({ text: message });
+                  else window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank");
+                } catch {
+                  // Closing the share sheet isn't an error.
+                }
+              }}
+              className="press h-12 flex-1 rounded-full bg-accent font-semibold text-white"
+            >
+              {he.share.sendLink}
+            </button>
+          </div>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={makeLink}
+            className="press h-11 font-semibold text-accent"
+          >
+            {he.share.anotherLink}
+          </button>
+          <button
+            type="button"
+            onClick={() => setLink(null)}
+            className="press h-11 font-semibold text-muted"
+          >
+            {he.share.again}
+          </button>
+        </section>
+        {sentList}
+      </div>
+    );
+  }
 
   if (done) {
     const url = new URL(withBase("/shared"), window.location.origin).toString();
@@ -371,59 +471,83 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold">{he.share.whoTitle}</h2>
-        <form onSubmit={addEmail} className="flex gap-2">
-          <input
-            type="email"
-            dir="ltr"
-            aria-label={he.share.emailLabel}
-            placeholder="name@gmail.com"
-            autoComplete="email"
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-            className={field}
-          />
+        <div role="group" className="flex gap-2">
           <button
-            type="submit"
-            className="press h-12 shrink-0 rounded-xl bg-white px-4 font-semibold ring-1 ring-rule"
+            type="button"
+            aria-pressed={how === "link"}
+            onClick={() => setHow("link")}
+            className={choice(how === "link")}
           >
-            {he.share.add}
+            {he.share.howLink}
           </button>
-        </form>
-        {emails.length > 0 && (
-          <ul className="flex flex-wrap gap-2">
-            {emails.map((e) => (
-              <li key={e}>
-                <button
-                  type="button"
-                  aria-label={he.share.remove(e)}
-                  onClick={() => setEmails(emails.filter((x) => x !== e))}
-                  className="press flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-sm text-paper"
-                  dir="ltr"
-                >
-                  {e} <span aria-hidden="true">×</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {previous.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted">{he.share.previous}</p>
-            <ul className="flex flex-wrap gap-2">
-              {previous.map((e) => (
-                <li key={e}>
-                  <button
-                    type="button"
-                    onClick={() => setEmails([...emails, e])}
-                    className="press flex h-10 items-center rounded-full bg-white px-4 text-sm ring-1 ring-rule"
-                    dir="ltr"
-                  >
-                    + {e}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <button
+            type="button"
+            aria-pressed={how === "email"}
+            onClick={() => setHow("email")}
+            className={choice(how === "email")}
+          >
+            {he.share.howEmail}
+          </button>
+        </div>
+        {how === "link" ? (
+          <p className="text-sm text-muted">{he.share.linkHint}</p>
+        ) : (
+          <>
+            <form onSubmit={addEmail} className="flex gap-2">
+              <input
+                type="email"
+                dir="ltr"
+                aria-label={he.share.emailLabel}
+                placeholder="name@gmail.com"
+                autoComplete="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className={field}
+              />
+              <button
+                type="submit"
+                className="press h-12 shrink-0 rounded-xl bg-white px-4 font-semibold ring-1 ring-rule"
+              >
+                {he.share.add}
+              </button>
+            </form>
+            {emails.length > 0 && (
+              <ul className="flex flex-wrap gap-2">
+                {emails.map((e) => (
+                  <li key={e}>
+                    <button
+                      type="button"
+                      aria-label={he.share.remove(e)}
+                      onClick={() => setEmails(emails.filter((x) => x !== e))}
+                      className="press flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-sm text-paper"
+                      dir="ltr"
+                    >
+                      {e} <span aria-hidden="true">×</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {previous.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-muted">{he.share.previous}</p>
+                <ul className="flex flex-wrap gap-2">
+                  {previous.map((e) => (
+                    <li key={e}>
+                      <button
+                        type="button"
+                        onClick={() => setEmails([...emails, e])}
+                        className="press flex h-10 items-center rounded-full bg-white px-4 text-sm ring-1 ring-rule"
+                        dir="ltr"
+                      >
+                        + {e}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -453,12 +577,17 @@ function ShareForm({ loaded, preselected }: { loaded: Loaded; preselected: strin
         onClick={share}
         className="press h-12 rounded-full bg-accent text-base font-semibold text-white disabled:opacity-60"
       >
-        {pending
-          ? he.share.sharing
-          : he.share.submit(
-              emails.length +
-                (isEmail(emailInput) && !emails.includes(normalizeEmail(emailInput)) ? 1 : 0) || 1,
-            )}
+        {how === "link"
+          ? pending
+            ? he.share.creatingLink
+            : he.share.createLink
+          : pending
+            ? he.share.sharing
+            : he.share.submit(
+                emails.length +
+                  (isEmail(emailInput) && !emails.includes(normalizeEmail(emailInput)) ? 1 : 0) ||
+                  1,
+              )}
       </button>
       {membersList}
       {sentList}

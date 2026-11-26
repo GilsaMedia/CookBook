@@ -800,6 +800,8 @@ export type Database = {
       };
       shares: {
         Row: {
+          claimed_at: string | null;
+          token_hash: string | null;
           added_count: number;
           can_add: boolean;
           created_at: string;
@@ -812,9 +814,11 @@ export type Database = {
           sender_name: string;
           status: Database["public"]["Enums"]["share_status"];
           to_book_id: string | null;
-          to_email: string;
+          to_email: string | null;
         };
         Insert: {
+          claimed_at?: string | null;
+          token_hash?: string | null;
           added_count?: number;
           can_add?: boolean;
           created_at?: string;
@@ -827,9 +831,11 @@ export type Database = {
           sender_name: string;
           status?: Database["public"]["Enums"]["share_status"];
           to_book_id?: string | null;
-          to_email: string;
+          to_email?: string | null;
         };
         Update: {
+          claimed_at?: string | null;
+          token_hash?: string | null;
           added_count?: number;
           can_add?: boolean;
           created_at?: string;
@@ -842,7 +848,7 @@ export type Database = {
           sender_name?: string;
           status?: Database["public"]["Enums"]["share_status"];
           to_book_id?: string | null;
-          to_email?: string;
+          to_email?: string | null;
         };
         Relationships: [
           {
@@ -1034,6 +1040,7 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      claim_share: { Args: { p_token: string }; Returns: string };
       create_book: { Args: { p_name: string }; Returns: string };
       decide_access: {
         Args: { p_approve: boolean; p_user: string };

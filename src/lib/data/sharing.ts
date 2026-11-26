@@ -10,7 +10,10 @@ import type { CurrentBook } from "./book";
 
 export type SentShare = {
   id: string;
-  toEmail: string;
+  /** Who it's for: an email, or (a link nobody opened yet) null. */
+  toEmail: string | null;
+  /** Shared as a link rather than to an email. */
+  byLink: boolean;
   /** null: the whole book. */
   recipeCount: number | null;
   status: "pending" | "accepted" | "declined";
@@ -94,12 +97,60 @@ export async function shareRecipes(input: {
   if (error) throw new ShareError(code(error.message));
 }
 
+const hex = (bytes: ArrayBuffer) =>
+  [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+/**
+ * A share as a link, for one person: whoever opens it first (and signs in)
+ * gets it. Only the token's SHA-256 is stored; resolves with the link.
+ */
+export async function createShareLink(input: {
+  book: CurrentBook;
+  recipeIds: string[] | null;
+  senderName: string;
+  canAdd?: boolean;
+  origin: string;
+  path: (token: string) => string;
+}): Promise<string> {
+  const db = supabase();
+  const user = await me();
+  if (!user) throw new ShareError("default");
+  const name = input.senderName.trim().slice(0, 40);
+  await db.from("profiles").update({ display_name: name }).eq("id", user.id);
+  const raw = crypto.getRandomValues(new Uint8Array(24));
+  const token = btoa(String.fromCharCode(...raw))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  const tokenHash = hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)));
+  const { error } = await db.from("shares").insert({
+    from_book_id: input.book.id,
+    from_user: user.id,
+    sender_name: name,
+    to_email: null,
+    token_hash: tokenHash,
+    recipe_ids: input.recipeIds,
+    can_add: input.recipeIds === null && !!input.canAdd,
+  });
+  if (error) throw new ShareError(code(error.message));
+  return new URL(input.path(token), input.origin).toString();
+}
+
+/** Opening a share link: it becomes the signed-in user's. Resolves with the share's id. */
+export async function claimShare(token: string): Promise<string> {
+  const { data, error } = await supabase().rpc("claim_share", { p_token: token });
+  if (error) throw new ShareError(code(error.message));
+  return data;
+}
+
 /** What this owner shared, newest first. */
 export async function sentShares(bookId: string): Promise<SentShare[]> {
   const user = await me();
   const { data, error } = await supabase()
     .from("shares")
-    .select("id, to_email, recipe_ids, status, added_count, created_at, can_add, follow")
+    .select(
+      "id, to_email, token_hash, recipe_ids, status, added_count, created_at, can_add, follow",
+    )
     .eq("from_book_id", bookId)
     .eq("from_user", user?.id ?? "")
     .order("created_at", { ascending: false })
@@ -108,6 +159,7 @@ export async function sentShares(bookId: string): Promise<SentShare[]> {
   return data.map((s) => ({
     id: s.id,
     toEmail: s.to_email,
+    byLink: s.token_hash !== null,
     recipeCount: s.recipe_ids?.length ?? null,
     status: s.status,
     addedCount: s.added_count,

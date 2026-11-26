@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { he } from "@/i18n/he";
 import { withBase } from "@/lib/demo";
@@ -9,6 +10,7 @@ import { selectBook, selectedBookId } from "@/lib/data/current-book";
 import { isDemo } from "@/lib/demo";
 import {
   acceptShare,
+  claimShare,
   copySharedPhotos,
   declineShare,
   incomingShares,
@@ -42,26 +44,37 @@ export function SharedScreen() {
     }
   };
 
+  const token = useSearchParams().get("t");
+  const router = useRouter();
+
   useEffect(() => {
     if (isDemo) return;
-    // Opening the only waiting share saves a tap.
-    incomingShares().then(
-      async (shares) => {
-        if (shares.length === 1) {
-          try {
-            return setStep({
-              name: "pick",
-              share: shares[0],
-              recipes: await previewShare(shares[0].id),
-            });
-          } catch {
-            // fall back to the list
-          }
+    (async () => {
+      // A share link: it becomes this user's, then it's like any share.
+      let claimed: string | null = null;
+      if (token) {
+        try {
+          claimed = await claimShare(token);
+        } catch (e) {
+          const code = e instanceof ShareError ? e.message : "default";
+          setError(he.shared.errors[code] ?? he.shared.errors.default);
         }
-        setStep({ name: "list", shares });
-      },
-      () => setStep({ name: "error" }),
-    );
+        router.replace("/shared");
+      }
+      const shares = await incomingShares();
+      // Opening the link's share (or the only one waiting) saves a tap.
+      const first =
+        shares.find((s) => s.id === claimed) ?? (shares.length === 1 ? shares[0] : null);
+      if (first) {
+        try {
+          return setStep({ name: "pick", share: first, recipes: await previewShare(first.id) });
+        } catch {
+          // fall back to the list
+        }
+      }
+      setStep({ name: "list", shares });
+    })().catch(() => setStep({ name: "error" }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, for the link it was opened with
   }, []);
 
   async function open(share: IncomingShare) {
