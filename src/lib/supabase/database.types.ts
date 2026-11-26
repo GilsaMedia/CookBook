@@ -449,6 +449,7 @@ export type Database = {
       };
       meal_items: {
         Row: {
+          added_by: string | null;
           book_id: string;
           created_at: string;
           id: string;
@@ -459,6 +460,7 @@ export type Database = {
           version_id: string | null;
         };
         Insert: {
+          added_by?: string | null;
           book_id: string;
           created_at?: string;
           id?: string;
@@ -469,6 +471,7 @@ export type Database = {
           version_id?: string | null;
         };
         Update: {
+          added_by?: string | null;
           book_id?: string;
           created_at?: string;
           id?: string;
@@ -907,6 +910,14 @@ export type Database = {
         Returns: number;
       };
       add_to_tray: { Args: { p_recipe: string }; Returns: string };
+      open_meal: {
+        Args: { p_book: string; p_date: string; p_title: string };
+        Returns: string;
+      };
+      book_people: {
+        Args: { p_book: string };
+        Returns: { name: string; user_id: string }[];
+      };
       access_requests: {
         Args: never;
         Returns: {

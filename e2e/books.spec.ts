@@ -69,10 +69,14 @@ test("a whole book taken whole keeps getting the recipes added later", async ({ 
     .insert({ book_id: book!.book_id, title: "עוגת הדבש של סבתא", status: "approved" });
   await danaPage.goto("/");
   await expect(danaPage.getByText("נוסף מתכון חדש מגיל")).toBeVisible();
-  await expect(danaPage.getByRole("main").getByRole("listitem")).toHaveCount(9);
-  await expect(danaPage.getByRole("link", { name: /עוגת הדבש של סבתא/ })).toContainText(
-    "שותף מגיל",
+  await expect(danaPage.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(
+    9,
   );
+  await expect(
+    danaPage
+      .getByRole("list", { name: "מתכונים" })
+      .getByRole("link", { name: /עוגת הדבש של סבתא/ }),
+  ).toContainText("שותף מגיל");
 });
 
 test("an invitation into the book: it's in their switcher, live", async ({ browser }) => {
@@ -104,7 +108,7 @@ test("an invitation into the book: it's in their switcher, live", async ({ brows
   await noaPage.getByRole("button", { name: "הצטרפות לספר" }).click();
   await noaPage.getByRole("button", { name: "לספר", exact: true }).click();
   await expect(noaPage.getByRole("heading", { level: 1 })).toHaveText("המתכונים של גיל");
-  await expect(noaPage.getByRole("main").getByRole("listitem")).toHaveCount(8);
+  await expect(noaPage.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(8);
 
   // Gil sees Noa in the book and can take her out.
   await gil.page.reload();

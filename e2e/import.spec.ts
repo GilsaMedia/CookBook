@@ -99,7 +99,7 @@ test("importing a link already in the book warns, then saves as new with its sou
   await expect(page.getByText("2 כוסות עדשים אדומות")).toBeVisible();
 
   await page.goto("/");
-  await expect(page.getByRole("main").getByRole("listitem")).toHaveCount(9);
+  await expect(page.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(9);
 });
 
 test("pasted text is reviewed, edited and saved", async ({ page }) => {

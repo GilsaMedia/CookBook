@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { he } from "@/i18n/he";
 import { cardMeta } from "@/lib/recipes/format";
 import type { Library, RecipeCard } from "@/lib/recipes/types";
@@ -15,23 +15,36 @@ export type PickMode = {
   label: string;
   onPick: (recipe: RecipeCard) => void;
   onCancel: () => void;
+  /** Recipes already in the meal: shown, but not pickable. */
+  taken: Set<string>;
 };
 
 /** Results follow the keyboard within this many ms (PRD §5.1 asks for ≤150). */
 const SEARCH_DEBOUNCE_MS = 100;
 
 const chipClass = (active: boolean) =>
-  `press flex h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-medium whitespace-nowrap ${
+  `press flex h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium ${
     active ? "bg-ink text-paper" : "bg-white text-ink ring-1 ring-rule"
   }`;
 
 /**
- * Library (screen 1): search on top, category chips, card grid.
+ * Library (screen 1): a header card (the book's name) with the search on
+ * its edge, the home sections (the family's meals, recently added) while
+ * nothing is searched or filtered, category chips, the card grid.
  * Filtering runs in the browser over the whole book, so it's instant.
  */
-export function LibraryView({ library, pick }: { library: Library; pick?: PickMode }) {
+export function LibraryView({
+  library,
+  pick,
+  hero,
+  home,
+}: {
+  library: Library;
+  pick?: PickMode;
+  hero?: ReactNode;
+  home?: ReactNode;
+}) {
   const tray = useTray();
-  const [added, setAdded] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -57,19 +70,27 @@ export function LibraryView({ library, pick }: { library: Library; pick?: PickMo
     return searchItems(filtered, debounced, (r) => r.searchText);
   }, [library.recipes, categoryId, tag, debounced]);
 
+  const heroCard = hero && (
+    <section className="rounded-3xl bg-accent px-5 pt-6 pb-12 text-white shadow-sm">{hero}</section>
+  );
+
   if (library.recipes.length === 0) {
     return (
-      <section className="flex flex-col items-center gap-4 py-16 text-center">
-        <p className="text-lg text-muted">{he.library.empty}</p>
-        <Link
-          href="/add"
-          className="press flex h-12 items-center rounded-full bg-accent px-6 text-base font-semibold text-white"
-        >
-          {he.library.addRecipe}
-        </Link>
-      </section>
+      <div className="flex flex-col gap-4">
+        {heroCard}
+        <section className="flex flex-col items-center gap-4 py-16 text-center">
+          <p className="text-lg text-muted">{he.library.empty}</p>
+          <Link
+            href="/add"
+            className="press flex h-12 items-center rounded-full bg-accent px-6 text-base font-semibold text-white"
+          >
+            {he.library.addRecipe}
+          </Link>
+        </section>
+      </div>
     );
   }
+  const idle = !pick && !debounced && !categoryId && !tag;
 
   return (
     <div className="flex flex-col gap-4">
@@ -83,7 +104,8 @@ export function LibraryView({ library, pick }: { library: Library; pick?: PickMo
           </button>
         </div>
       )}
-      <div role="search">
+      {heroCard}
+      <div role="search" className={heroCard ? "relative z-10 -mt-12 px-3" : undefined}>
         <label className="relative block">
           <span className="sr-only">{he.library.searchLabel}</span>
           <svg
@@ -105,15 +127,17 @@ export function LibraryView({ library, pick }: { library: Library; pick?: PickMo
             placeholder={he.library.searchPlaceholder}
             enterKeyHint="search"
             autoComplete="off"
-            className="h-12 w-full rounded-2xl bg-white ps-12 pe-4 text-base shadow-sm ring-1 ring-rule outline-none placeholder:text-muted focus:ring-2 focus:ring-accent"
+            className="h-14 w-full rounded-full bg-white ps-12 pe-5 text-base shadow-md ring-1 ring-rule outline-none placeholder:text-muted focus:ring-2 focus:ring-accent"
           />
         </label>
       </div>
 
+      {idle && home}
+
       <div
         role="group"
         aria-label={he.library.categoriesLabel}
-        className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto overscroll-x-contain px-4 py-1"
+        className="flex flex-wrap gap-2 py-1"
       >
         <button
           type="button"
@@ -165,15 +189,24 @@ export function LibraryView({ library, pick }: { library: Library; pick?: PickMo
           {he.library.noResults}
         </p>
       ) : (
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        <ul
+          aria-label={he.library.resultsLabel}
+          className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4"
+        >
           {results.map((r) => (
             <li key={r.id} className="relative min-w-0">
               {pick ? (
                 <button
                   type="button"
+                  disabled={pick.taken.has(r.id)}
                   onClick={() => pick.onPick(r)}
-                  className="press flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white text-start shadow-sm ring-1 ring-rule"
+                  className="press relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white text-start shadow-sm ring-1 ring-rule disabled:opacity-50"
                 >
+                  {pick.taken.has(r.id) && (
+                    <span className="absolute start-2 top-2 z-10 rounded-full bg-ink px-2 py-1 text-xs font-semibold text-paper">
+                      {he.meals.alreadyInBadge}
+                    </span>
+                  )}
                   <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />
                   <div className="flex flex-1 flex-col gap-1 p-3">
                     <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
@@ -213,18 +246,14 @@ export function LibraryView({ library, pick }: { library: Library; pick?: PickMo
               {!pick && tray.canPlan && (
                 <button
                   type="button"
-                  aria-label={he.meals.addCard(r.title)}
-                  onClick={async () => {
-                    try {
-                      await tray.add(r.id);
-                      setAdded(r.id);
-                    } catch {
-                      setAdded(null);
-                    }
-                  }}
-                  className="press absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-white/90 text-xl font-bold text-accent shadow-sm ring-1 ring-rule"
+                  disabled={tray.has(r.id)}
+                  aria-label={
+                    tray.has(r.id) ? he.meals.alreadyInCard(r.title) : he.meals.addCard(r.title)
+                  }
+                  onClick={() => tray.add(r.id).catch(() => {})}
+                  className="press absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-white/90 text-xl font-bold text-accent shadow-sm ring-1 ring-rule disabled:bg-accent disabled:text-white"
                 >
-                  {added === r.id ? "✓" : "+"}
+                  {tray.has(r.id) ? "✓" : "+"}
                 </button>
               )}
             </li>

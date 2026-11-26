@@ -5,11 +5,16 @@ import { useAccess } from "@/components/auth/AuthProvider";
 import { getCurrentBook } from "@/lib/data/book";
 import { addToTray, getTray } from "@/lib/data/meals";
 import { isDemo } from "@/lib/demo";
+import { mealLabel } from "@/lib/meals/format";
 
 type Tray = {
-  /** The book's tray (its draft meal), once it has one. */
+  /** The book's tray (its active meal), once it has one. */
   id: string | null;
   count: number;
+  /** "יום שישי 27/11/2026" */
+  label: string;
+  /** Whether a recipe is already in the active meal. */
+  has: (recipeId: string) => boolean;
   /** Owners and contributors plan meals; viewers only look. */
   canPlan: boolean;
   add: (recipeId: string) => Promise<void>;
@@ -19,6 +24,8 @@ type Tray = {
 const TrayContext = createContext<Tray>({
   id: null,
   count: 0,
+  label: "",
+  has: () => false,
   canPlan: false,
   add: async () => {},
   refresh: () => {},
@@ -33,7 +40,12 @@ export function TrayProvider({ children }: { children: ReactNode }) {
   const access = useAccess();
   const approved = access?.status === "approved";
   const [book, setBook] = useState<{ id: string; canPlan: boolean } | null>(null);
-  const [tray, setTray] = useState<{ id: string | null; count: number }>({ id: null, count: 0 });
+  const [tray, setTray] = useState<{
+    id: string | null;
+    count: number;
+    label: string;
+    recipeIds: Set<string>;
+  }>({ id: null, count: 0, label: "", recipeIds: new Set() });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -52,7 +64,18 @@ export function TrayProvider({ children }: { children: ReactNode }) {
     if (!book) return;
     let live = true;
     getTray(book.id).then(
-      (t) => live && setTray(t ?? { id: null, count: 0 }),
+      (t) =>
+        live &&
+        setTray(
+          t
+            ? {
+                id: t.id,
+                count: t.count,
+                label: mealLabel(t.title, t.date),
+                recipeIds: new Set(t.recipeIds),
+              }
+            : { id: null, count: 0, label: "", recipeIds: new Set() },
+        ),
       () => {},
     );
     return () => {
@@ -71,7 +94,15 @@ export function TrayProvider({ children }: { children: ReactNode }) {
 
   return (
     <TrayContext.Provider
-      value={{ id: tray.id, count: tray.count, canPlan: !!book?.canPlan, add, refresh }}
+      value={{
+        id: tray.id,
+        count: tray.count,
+        label: tray.label,
+        has: (recipeId: string) => tray.recipeIds.has(recipeId),
+        canPlan: !!book?.canPlan,
+        add,
+        refresh,
+      }}
     >
       {children}
     </TrayContext.Provider>

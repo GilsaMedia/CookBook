@@ -13,7 +13,10 @@ test("Gil shares a recipe; Dana chooses it and gets a tagged copy in her own boo
   const gil = await signIn(gilPage);
   execFileSync("node", ["scripts/seed-sample-book.mjs", gil], { stdio: "inherit" });
   await gilPage.goto("/");
-  await gilPage.getByRole("link", { name: /סלט גזר מרוקאי/ }).click();
+  await gilPage
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("link", { name: /סלט גזר מרוקאי/ })
+    .click();
   await gilPage.getByRole("link", { name: "שיתוף המתכון" }).click();
   await expect(gilPage.getByRole("button", { name: "מתכונים נבחרים (1)" })).toHaveAttribute(
     "aria-pressed",
@@ -39,7 +42,7 @@ test("Gil shares a recipe; Dana chooses it and gets a tagged copy in her own boo
   });
 
   await danaPage.getByRole("link", { name: "לספרייה" }).click();
-  const card = danaPage.getByRole("main").getByRole("listitem");
+  const card = danaPage.getByRole("list", { name: "מתכונים" }).getByRole("listitem");
   await expect(card).toHaveCount(1);
   await expect(card).toContainText("סלט גזר מרוקאי");
   await expect(card).toContainText("שותף מגיל");

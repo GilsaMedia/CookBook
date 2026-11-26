@@ -7,12 +7,12 @@ import { he } from "@/i18n/he";
 import { useTray } from "./TrayProvider";
 
 /**
- * "מגש הארוחה · N", floating above the tabs (PRD §8.1). The number bumps
+ * "מגש: ארוחת שישי · 27.11 · N", floating above the tabs (PRD §8.1). The number bumps
  * with a critically damped spring when a dish is added; with reduced motion
  * it just changes.
  */
 export function TrayPill() {
-  const { id, count } = useTray();
+  const { id, count, label } = useTray();
   const pathname = usePathname();
   const reduce = useReducedMotion();
   if (
@@ -27,9 +27,9 @@ export function TrayPill() {
   return (
     <Link
       href={`/meals?id=${id}`}
-      className="press fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex h-11 w-fit items-center gap-1 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-lg"
+      className="press fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-30 mx-auto flex h-11 w-fit items-center gap-1 rounded-full bg-ink px-5 text-sm font-semibold text-paper shadow-lg print:hidden"
     >
-      {he.meals.trayTitle} ·
+      <span>{he.meals.trayPill(label)}</span>{" "}
       <motion.span
         key={count}
         className="inline-block tabular-nums"

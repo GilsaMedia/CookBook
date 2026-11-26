@@ -1,6 +1,7 @@
 /**
- * Meal titles and dates in Hebrew (PRD §8.2): "ארוחת שישי · 14.11".
- * Dates are calendar days ("2026-11-27"), handled in local time.
+ * Meal titles and dates in Hebrew, the way the family writes them:
+ * "יום שישי 27/11/2026". Dates are calendar days ("2026-11-27"), handled in
+ * local time.
  */
 
 const WEEKDAYS = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
@@ -16,8 +17,8 @@ export const toIsoDate = (d: Date) =>
 /** "שישי" */
 export const weekday = (iso: string) => WEEKDAYS[parse(iso).getDay()];
 
-/** "ארוחת שישי": the title a meal gets from its date. */
-export const defaultTitle = (iso: string) => `ארוחת ${weekday(iso)}`;
+/** "יום שישי": the title a meal gets from its date. */
+export const defaultTitle = (iso: string) => `יום ${weekday(iso)}`;
 
 /** "14.11" */
 export const shortDate = (iso: string) => {
@@ -25,11 +26,17 @@ export const shortDate = (iso: string) => {
   return `${d.getDate()}.${d.getMonth() + 1}`;
 };
 
-/** "ארוחת שישי · 14.11"; without a date, just the title. */
+/** "27/11/2026" */
+export const slashDate = (iso: string) => {
+  const d = parse(iso);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+};
+
+/** "יום שישי 27/11/2026"; without a date, just the title. */
 export const mealLabel = (title: string, iso: string | null) =>
-  [title.trim() || (iso ? defaultTitle(iso) : ""), iso ? shortDate(iso) : ""]
+  [title.trim() || (iso ? defaultTitle(iso) : ""), iso ? slashDate(iso) : ""]
     .filter(Boolean)
-    .join(" · ");
+    .join(" ");
 
 /** The coming Friday (today, if it's Friday): most family meals are Friday dinner. */
 export function nextFriday(today = new Date()): string {
@@ -37,3 +44,9 @@ export function nextFriday(today = new Date()): string {
   d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7));
   return toIsoDate(d);
 }
+
+/** "27.11.2026", from a date or a timestamp. */
+export const fullDate = (iso: string) => {
+  const d = iso.length === 10 ? parse(iso) : new Date(iso);
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+};

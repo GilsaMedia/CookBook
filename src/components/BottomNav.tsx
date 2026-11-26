@@ -84,7 +84,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label={he.nav.label}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-paper/75 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 not-supports-[backdrop-filter:blur(1px)]:bg-paper reduced-transparency:bg-paper reduced-transparency:backdrop-blur-none reduced-transparency:backdrop-saturate-100"
+      className="fixed inset-x-0 bottom-0 z-40 border-t print:hidden border-rule bg-paper/75 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl backdrop-saturate-150 not-supports-[backdrop-filter:blur(1px)]:bg-paper reduced-transparency:bg-paper reduced-transparency:backdrop-blur-none reduced-transparency:backdrop-saturate-100"
     >
       <ul className="mx-auto grid h-16 max-w-xl grid-cols-4">
         {tabs.map((tab) => {
@@ -101,7 +101,7 @@ export function BottomNav() {
                 <span className="relative">
                   {tab.icon}
                   {tab.soon && (
-                    <SoonBadge className="absolute -end-5 -top-1.5 px-1.5 py-0.5 text-[0.5rem]" />
+                    <SoonBadge className="absolute -end-7 -top-2.5 px-1.5 py-0.5 text-[0.5rem]" />
                   )}
                 </span>
                 <span>{tab.label}</span>

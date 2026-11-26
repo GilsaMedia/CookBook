@@ -27,6 +27,9 @@ export type RecipeCard = {
   sourceUrl: string | null;
   /** Labels such as "שותף מגיל" (a recipe someone shared). */
   tags: string[];
+  dishRole: DishRole | null;
+  /** When it was added to the book (ISO), for "נוספו לאחרונה". */
+  createdAt: string | null;
 };
 
 export type RecipeIngredient = {
@@ -44,7 +47,10 @@ export type RecipeStep = {
 export type ImageCredit = { author: string; license: string; sourceUrl: string };
 
 /** Everything the recipe page shows. */
-export type RecipeDetail = Omit<RecipeCard, "searchText" | "ingredientNames" | "sourceUrl"> & {
+export type RecipeDetail = Omit<
+  RecipeCard,
+  "searchText" | "ingredientNames" | "sourceUrl" | "createdAt"
+> & {
   imageCredit: ImageCredit | null;
   sourceName: string | null;
   sourceUrl: string | null;

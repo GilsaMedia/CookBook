@@ -9,7 +9,7 @@ import { mealLabel } from "@/lib/meals/format";
 import type { RecipeDetail } from "@/lib/recipes/types";
 
 /** "דף ארוחה": every dish of the meal in full, on one page, for cooking them together. */
-export function MealPage({ id }: { id: string }) {
+export function MealPage({ id, print = false }: { id: string; print?: boolean }) {
   const [data, setData] = useState<{ meal: Meal; recipes: (RecipeDetail | null)[] } | null>();
 
   useEffect(() => {
@@ -21,6 +21,11 @@ export function MealPage({ id }: { id: string }) {
     })().catch(() => setData(null));
   }, [id]);
 
+  // "הדפסה / שמירה כ-PDF": the print dialog once the dishes are in.
+  useEffect(() => {
+    if (print && data) window.print();
+  }, [print, data]);
+
   if (data === undefined)
     return <p className="py-16 text-center text-muted">{he.common.loading}</p>;
   if (data === null) return <h1 className="text-2xl font-bold">{he.meals.notFound}</h1>;
@@ -30,12 +35,12 @@ export function MealPage({ id }: { id: string }) {
     <article className="flex flex-col gap-8">
       <Link
         href={`/meals?id=${meal.id}`}
-        className="press -my-2 flex h-11 w-fit items-center text-sm font-medium text-muted"
+        className="press -my-2 flex h-11 w-fit items-center text-sm font-medium text-muted print:hidden"
       >
         {he.meals.toMeal}
       </Link>
       <h1 className="text-3xl leading-tight font-bold">
-        {meal.status === "draft" ? he.meals.trayTitle : mealLabel(meal.title, meal.date)}
+        {mealLabel(meal.title, meal.date) || he.meals.trayTitle}
       </h1>
       {meal.items.map((item, n) => {
         const recipe = recipes[n];

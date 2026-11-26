@@ -12,7 +12,7 @@ async function signInWithSampleBook(page: Parameters<typeof signIn>[0]) {
 
 test("library → filter a category → recipe page with a safe source link", async ({ page }) => {
   await signInWithSampleBook(page);
-  const cards = page.getByRole("main").getByRole("listitem");
+  const cards = page.getByRole("list", { name: "מתכונים" }).getByRole("listitem");
   await expect(cards).toHaveCount(8);
 
   // Tapping a chip filters; tapping it again clears.
@@ -24,7 +24,10 @@ test("library → filter a category → recipe page with a safe source link", as
   await expect(cards).toHaveCount(8);
   await salads.click();
 
-  await page.getByRole("link", { name: /סלט גזר מרוקאי/ }).click();
+  await page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("link", { name: /סלט גזר מרוקאי/ })
+    .click();
   await expect(page).toHaveURL(/\/recipe\?id=[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("סלט גזר מרוקאי");
   const source = page.getByRole("link", { name: /מתכון לדוגמה/ });
@@ -37,7 +40,10 @@ test("library → filter a category → recipe page with a safe source link", as
 test("searching the plural finds the singular ingredient", async ({ page }) => {
   await signInWithSampleBook(page);
   await page.getByRole("searchbox").fill("גזרים");
-  const titles = page.getByRole("main").getByRole("listitem").getByRole("heading");
+  const titles = page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("listitem")
+    .getByRole("heading");
   await expect(titles).toHaveText(["מרק עדשים כתומות", "סלט גזר מרוקאי"]);
 });
 
@@ -51,7 +57,10 @@ test("excluded ingredients show a warning, and nothing scrolls sideways at 360px
   const overflow = () =>
     page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(await overflow()).toBe(0);
-  await page.getByRole("link", { name: /עוגת תפוזים/ }).click();
+  await page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("link", { name: /עוגת תפוזים/ })
+    .click();
   await expect(page.getByText("מכיל הל")).toBeVisible();
   expect(await overflow()).toBe(0);
 });
