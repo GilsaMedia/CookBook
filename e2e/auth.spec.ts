@@ -42,7 +42,7 @@ test("signing out, then back in with the password", async ({ page }) => {
 
   await fillSignIn(page, email);
   await expect(page).toHaveURL(/\/shopping$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("קניות");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^קניות/);
 });
 
 test("a wrong password is refused", async ({ page }) => {

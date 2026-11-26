@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTray } from "@/components/meals/TrayProvider";
+import { SoonBadge } from "@/components/SoonBadge";
 import { he } from "@/i18n/he";
 import {
   deleteMeal,
@@ -199,12 +200,15 @@ export function MealView({ id }: { id: string }) {
         </Link>
       )}
       <div className="flex gap-3">
-        <Link
-          href={`/shopping?meal=${m.id}`}
-          className="press flex h-12 flex-1 items-center justify-center rounded-full bg-accent font-semibold text-white"
+        <button
+          type="button"
+          disabled
+          aria-label={`${he.meals.shopping} · ${he.common.soon}`}
+          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-accent/40 font-semibold text-white"
         >
           {he.meals.shopping}
-        </Link>
+          <SoonBadge className="bg-white/90" />
+        </button>
         <Link
           href={`/meals?id=${m.id}&view=page`}
           className="press flex h-12 flex-1 items-center justify-center rounded-full bg-white font-semibold ring-1 ring-rule"

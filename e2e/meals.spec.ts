@@ -53,6 +53,9 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(dishes).toHaveCount(6);
   await expect(dishes.first()).toContainText("שקשוקה");
 
+  // Not built yet, and says so.
+  await expect(page.getByRole("button", { name: "יצירת רשימת קניות · בקרוב" })).toBeDisabled();
+
   // The meal page: every dish in full.
   await page.getByRole("link", { name: "דף ארוחה" }).click();
   await expect(page.getByRole("heading", { level: 2 })).toHaveCount(6);

@@ -16,6 +16,7 @@ export const he = {
     add: "הוספה",
   },
   common: {
+    soon: "בקרוב",
     loading: "טוענים…",
     loadFailed: "לא הצלחנו לטעון. כדאי לבדוק את החיבור ולנסות שוב.",
   },
@@ -46,6 +47,7 @@ export const he = {
     opensInNewTab: "(נפתח בלשונית חדשה)",
     addToMeal: "הוספה לארוחה +",
     cookMode: "מצב בישול",
+    cookModeSoon: "מצב בישול · בקרוב",
     ingredients: "מצרכים",
     steps: "אופן ההכנה",
     optional: "רשות",
@@ -146,7 +148,7 @@ export const he = {
     toMeal: "לארוחה",
     notFound: "הארוחה לא נמצאה",
     failed: "משהו השתבש. נסו שוב.",
-    shoppingSoon: "רשימת הקניות מגיעה בשלב הבא.",
+    shoppingSoon: "רשימת הקניות החכמה בקרוב: מכל המנות של הארוחה, מסודרת לפי מחלקות בסופר.",
   },
   books: {
     switchLabel: "החלפת ספר",
