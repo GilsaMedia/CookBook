@@ -22,7 +22,7 @@ test("a meal's shopping list: merged, by section, at home, checks that survive a
   const potato = page.getByRole("button", { name: "מצרכים: מרק בטטה" });
   await expect(potato).toHaveText("מצרכים (0/5 בבית)");
   await potato.click();
-  await page.getByRole("checkbox", { name: /בטטה/ }).check();
+  await page.getByRole("checkbox", { name: /בטטות/ }).check();
   await expect(potato).toHaveText("מצרכים (1/5 בבית)");
 
   await page.getByRole("link", { name: "יצירת רשימת קניות" }).click();
