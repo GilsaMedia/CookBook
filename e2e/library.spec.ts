@@ -24,7 +24,10 @@ test("library → filter a category → recipe page with a safe source link", as
   await expect(cards).toHaveCount(8);
   await salads.click();
 
-  await page.getByRole("link", { name: /סלט גזר מרוקאי/ }).click();
+  await page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("link", { name: /סלט גזר מרוקאי/ })
+    .click();
   await expect(page).toHaveURL(/\/recipe\?id=[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("סלט גזר מרוקאי");
   const source = page.getByRole("link", { name: /מתכון לדוגמה/ });
@@ -54,7 +57,10 @@ test("excluded ingredients show a warning, and nothing scrolls sideways at 360px
   const overflow = () =>
     page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(await overflow()).toBe(0);
-  await page.getByRole("link", { name: /עוגת תפוזים/ }).click();
+  await page
+    .getByRole("list", { name: "מתכונים" })
+    .getByRole("link", { name: /עוגת תפוזים/ })
+    .click();
   await expect(page.getByText("מכיל הל")).toBeVisible();
   expect(await overflow()).toBe(0);
 });

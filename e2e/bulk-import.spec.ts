@@ -138,7 +138,7 @@ test("a whole Word cookbook: map, import in the background, review duplicates, s
 
   await page.getByRole("link", { name: "לספרייה" }).click();
   await expect(page.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(3);
-  await page.getByRole("link", { name: /מוסקה/ }).click();
+  await page.getByRole("list", { name: "מתכונים" }).getByRole("link", { name: /מוסקה/ }).click();
   await expect(page.getByText("אופים בתנור על 160 מעלות שעה.")).toBeVisible();
 
   // The same file again: everything is already in the book.

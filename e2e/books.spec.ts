@@ -72,9 +72,11 @@ test("a whole book taken whole keeps getting the recipes added later", async ({ 
   await expect(danaPage.getByRole("list", { name: "מתכונים" }).getByRole("listitem")).toHaveCount(
     9,
   );
-  await expect(danaPage.getByRole("link", { name: /עוגת הדבש של סבתא/ })).toContainText(
-    "שותף מגיל",
-  );
+  await expect(
+    danaPage
+      .getByRole("list", { name: "מתכונים" })
+      .getByRole("link", { name: /עוגת הדבש של סבתא/ }),
+  ).toContainText("שותף מגיל");
 });
 
 test("an invitation into the book: it's in their switcher, live", async ({ browser }) => {
