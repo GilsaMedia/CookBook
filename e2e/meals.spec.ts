@@ -68,8 +68,7 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   const menu = page.getByRole("region", { name: "השלמת התפריט ✨" });
   await expect(menu.getByRole("link", { name: "מרק עדשים כתומות" })).toBeVisible();
 
-  // Not built yet, and says so.
-  await expect(page.getByRole("button", { name: "יצירת רשימת קניות · בקרוב" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "יצירת רשימת קניות" })).toBeVisible();
 
   // The meal page: every dish in full.
   await page.getByRole("link", { name: "דף ארוחה" }).click();

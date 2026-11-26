@@ -178,16 +178,19 @@ export type Database = {
           created_at: string;
           id: string;
           name: string;
+          pantry: string[];
         };
         Insert: {
           created_at?: string;
           id?: string;
           name: string;
+          pantry?: string[];
         };
         Update: {
           created_at?: string;
           id?: string;
           name?: string;
+          pantry?: string[];
         };
         Relationships: [];
       };
@@ -864,6 +867,81 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      shopping_items: {
+        Row: {
+          book_id: string;
+          buy: number | null;
+          checked: boolean;
+          created_at: string;
+          id: string;
+          in_pantry: boolean;
+          key: string;
+          list_id: string;
+          name: string;
+          quantity: number | null;
+          section: Database["public"]["Enums"]["ingredient_section"];
+          sources: string[];
+          unit: Database["public"]["Enums"]["ingredient_unit"] | null;
+        };
+        Insert: {
+          book_id: string;
+          buy?: number | null;
+          checked?: boolean;
+          created_at?: string;
+          id?: string;
+          in_pantry?: boolean;
+          key: string;
+          list_id: string;
+          name: string;
+          quantity?: number | null;
+          section?: Database["public"]["Enums"]["ingredient_section"];
+          sources?: string[];
+          unit?: Database["public"]["Enums"]["ingredient_unit"] | null;
+        };
+        Update: {
+          book_id?: string;
+          buy?: number | null;
+          checked?: boolean;
+          created_at?: string;
+          id?: string;
+          in_pantry?: boolean;
+          key?: string;
+          list_id?: string;
+          name?: string;
+          quantity?: number | null;
+          section?: Database["public"]["Enums"]["ingredient_section"];
+          sources?: string[];
+          unit?: Database["public"]["Enums"]["ingredient_unit"] | null;
+        };
+        Relationships: [];
+      };
+      shopping_lists: {
+        Row: {
+          book_id: string;
+          created_at: string;
+          done_at: string | null;
+          id: string;
+          meal_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          book_id: string;
+          created_at?: string;
+          done_at?: string | null;
+          id?: string;
+          meal_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          book_id?: string;
+          created_at?: string;
+          done_at?: string | null;
+          id?: string;
+          meal_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       steps: {
         Row: {

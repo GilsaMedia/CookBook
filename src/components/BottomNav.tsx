@@ -46,7 +46,6 @@ const tabs: Tab[] = [
   {
     href: "/shopping",
     label: he.nav.shopping,
-    soon: true,
     icon: (
       <svg {...iconProps}>
         <path d="M5 8h14l-1.5 12h-11z" />

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTray } from "@/components/meals/TrayProvider";
 import { ConfirmButton } from "@/components/ConfirmButton";
-import { SoonBadge } from "@/components/SoonBadge";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
 import {
@@ -14,7 +13,6 @@ import {
   bookPeople,
   deleteMeal,
   getMeal,
-  mealIngredients,
   recipeServings,
   removeItem,
   restoreItem,
@@ -23,7 +21,9 @@ import {
   type Meal,
   type MealItem,
 } from "@/lib/data/meals";
+import { setInPantry, syncList, type MealList } from "@/lib/data/shopping";
 import { courseStatus, otherDishes } from "@/lib/meals/courses";
+import { keyOf } from "@/lib/shopping";
 import { defaultTitle, fullDate, mealLabel, nextFriday } from "@/lib/meals/format";
 import type { RecipeCard } from "@/lib/recipes/types";
 import { withBase } from "@/lib/demo";
@@ -54,7 +54,7 @@ export function MealView({ id }: { id: string }) {
   const [editing, setEditing] = useState(false);
   const [removed, setRemoved] = useState<MealItem | null>(null);
   const [people, setPeople] = useState(new Map<string, string>());
-  const [ingredients, setIngredients] = useState(new Map<string, string[]>());
+  const [shopping, setShopping] = useState<MealList | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [library, setLibrary] = useState<RecipeCard[]>([]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,15 +72,24 @@ export function MealView({ id }: { id: string }) {
   }, [id]);
 
   const bookId = meal?.bookId;
-  const recipeKey = meal?.items.map((i) => i.recipeId).join(",") ?? "";
+  // The list follows the meal: any change to its dishes or servings rebuilds it.
+  const dishKey = meal?.items.map((i) => `${i.recipeId}:${i.servings}`).join(",") ?? "";
   useEffect(() => {
     if (!bookId) return;
     bookPeople(bookId).then(setPeople, () => {});
   }, [bookId]);
   useEffect(() => {
-    if (!recipeKey) return;
-    mealIngredients(recipeKey.split(",")).then(setIngredients, () => {});
-  }, [recipeKey]);
+    if (meal === undefined || meal === null) return;
+    let live = true;
+    syncList(id, tray.canPlan).then(
+      (d) => live && setShopping(d),
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rebuild when the dishes change
+  }, [dishKey, id, tray.canPlan]);
 
   if (meal === undefined)
     return <p className="py-16 text-center text-muted">{he.common.loading}</p>;
@@ -96,6 +105,30 @@ export function MealView({ id }: { id: string }) {
   const m = meal;
   const isTray = m.status === "draft";
   const canPlan = tray.canPlan;
+  const listItems = new Map((shopping?.list.items ?? []).map((i) => [i.key, i]));
+  const linesOf = (recipeId: string) =>
+    (shopping?.lines ?? []).filter((l) => l.recipeId === recipeId);
+  const counted = (recipeId: string) => {
+    const lines = linesOf(recipeId).filter((l) => !l.optional);
+    const home = lines.filter((l) => listItems.get(keyOf(l))?.inPantry).length;
+    return { home, total: lines.length };
+  };
+  async function markHome(key: string, inPantry: boolean) {
+    const item = listItems.get(key);
+    if (!item || !shopping?.list.id || !canPlan) return;
+    setShopping({
+      ...shopping,
+      list: {
+        ...shopping.list,
+        items: shopping.list.items.map((i) => (i.key === key ? { ...i, inPantry } : i)),
+      },
+    });
+    try {
+      await setInPantry(item.id, inPantry);
+    } catch {
+      setError(he.meals.failed);
+    }
+  }
 
   async function act(fn: () => Promise<unknown>) {
     setError(undefined);
@@ -195,7 +228,10 @@ export function MealView({ id }: { id: string }) {
                       onClick={() => setOpen(open === item.id ? null : item.id)}
                       className={`${pill} ${open === item.id ? "bg-ink text-paper" : ""}`}
                     >
-                      {he.meals.ingredients(ingredients.get(item.recipeId)?.length ?? 0)}
+                      {he.meals.ingredients(
+                        counted(item.recipeId).home,
+                        counted(item.recipeId).total,
+                      )}
                     </button>
                     {canPlan && (
                       <button
@@ -248,10 +284,35 @@ export function MealView({ id }: { id: string }) {
                       </Link>
                     )}
                   </div>
-                  <ul className="flex flex-col gap-1 border-t border-rule pt-3 text-sm">
-                    {(ingredients.get(item.recipeId) ?? []).map((line, n) => (
-                      <li key={n}>{line}</li>
-                    ))}
+                  <ul className="flex flex-col border-t border-rule pt-2 text-sm">
+                    {linesOf(item.recipeId).map((line, n) => {
+                      const listed = listItems.get(keyOf(line));
+                      return (
+                        <li key={n}>
+                          {line.optional || !listed ? (
+                            <span className="flex min-h-11 items-center ps-9">
+                              {line.displayText}
+                            </span>
+                          ) : (
+                            <label className="flex min-h-11 items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={listed.inPantry}
+                                disabled={!canPlan}
+                                onChange={(e) => markHome(listed.key, e.target.checked)}
+                                className="size-5 shrink-0 accent-accent"
+                              />
+                              <span className={listed.inPantry ? "text-muted line-through" : ""}>
+                                {line.displayText}
+                              </span>
+                              {listed.inPantry && (
+                                <span className="text-xs text-muted">{he.meals.atHome}</span>
+                              )}
+                            </label>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}
@@ -281,15 +342,9 @@ export function MealView({ id }: { id: string }) {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled
-          aria-label={`${he.meals.shopping} · ${he.common.soon}`}
-          className={`${rect} text-muted`}
-        >
+        <Link href={`/shopping?meal=${m.id}`} className={`${rect} font-semibold`}>
           {he.meals.shopping}
-          <SoonBadge />
-        </button>
+        </Link>
         <Link href={`/meals?id=${m.id}&view=page`} className={rect}>
           {he.meals.page}
         </Link>
