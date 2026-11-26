@@ -130,21 +130,25 @@ export function MealView({ id }: { id: string }) {
         {he.meals.back}
       </Link>
 
-      {isTray || editing ? (
+      {editing ? (
         <SaveForm
           meal={m}
           onSave={async (title, date) => {
-            await act(() =>
-              updateMeal(m.id, { title, date, ...(isTray ? { status: "done" as const } : {}) }),
-            );
+            await act(() => updateMeal(m.id, { title, date }));
             setEditing(false);
           }}
-          heading={isTray ? he.meals.trayHeading("") : undefined}
-          disabled={!canPlan}
+          onCancel={() => setEditing(false)}
         />
       ) : (
         <header className="flex flex-col gap-1">
-          <h1 className="text-3xl leading-tight font-bold">{mealLabel(m.title, m.date)}</h1>
+          <h1 className="text-3xl leading-tight font-bold">
+            {isTray ? he.meals.trayHeading(mealLabel(m.title, m.date)) : mealLabel(m.title, m.date)}
+          </h1>
+          {isTray && (
+            <p className="font-semibold text-accent">
+              {he.meals.activeTitle} · {he.meals.activeHint}
+            </p>
+          )}
           {canPlan && (
             <button
               type="button"
@@ -333,17 +337,15 @@ export function MealView({ id }: { id: string }) {
   );
 }
 
-/** Name and date. Saving the tray makes it a meal; the title follows the date until edited. */
+/** The meal's name and date; the name follows the date until it's edited. */
 function SaveForm({
   meal,
   onSave,
-  heading,
-  disabled,
+  onCancel,
 }: {
   meal: Meal;
   onSave: (title: string, date: string) => Promise<void>;
-  heading?: string;
-  disabled: boolean;
+  onCancel: () => void;
 }) {
   const [date, setDate] = useState(meal.date ?? nextFriday());
   const [title, setTitle] = useState(meal.title);
@@ -358,44 +360,51 @@ function SaveForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3">
-      {heading && <h1 className="text-3xl leading-tight font-bold">{heading}</h1>}
-      {!disabled && (
-        <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule">
-          <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1">
-              <span className="text-sm font-medium">{he.meals.nameLabel}</span>
-              <input
-                value={shown}
-                maxLength={80}
-                onChange={(e) => setTitle(e.target.value)}
-                className={field}
-              />
-            </label>
-            <label className="flex w-40 flex-col gap-1">
-              <span className="text-sm font-medium">{he.meals.dateLabel}</span>
-              <input
-                type="date"
-                required
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className={field}
-              />
-            </label>
-          </div>
-          <button
-            disabled={pending}
-            className="press h-12 rounded-full bg-ink font-semibold text-paper disabled:opacity-60"
-          >
-            {pending ? he.meals.saving : heading ? he.meals.saveTitle : he.meals.save}
-          </button>
-        </div>
-      )}
+    <form
+      onSubmit={submit}
+      className="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-rule"
+    >
+      <div className="flex gap-3">
+        <label className="flex flex-1 flex-col gap-1">
+          <span className="text-sm font-medium">{he.meals.nameLabel}</span>
+          <input
+            value={shown}
+            maxLength={80}
+            onChange={(e) => setTitle(e.target.value)}
+            className={field}
+          />
+        </label>
+        <label className="flex w-40 flex-col gap-1">
+          <span className="text-sm font-medium">{he.meals.dateLabel}</span>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={field}
+          />
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <button
+          disabled={pending}
+          className="press h-12 flex-1 rounded-full bg-ink font-semibold text-paper disabled:opacity-60"
+        >
+          {pending ? he.meals.saving : he.meals.save}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="press h-12 flex-1 rounded-full bg-white font-semibold ring-1 ring-rule"
+        >
+          {he.meals.pickCancel}
+        </button>
+      </div>
     </form>
   );
 }
 
-/** "מה עוד חסר": courses the meal is short of, with dishes from the book to add. */
+/** "השלמת התפריט": courses the meal is short of, with dishes from the book to add. */
 function Suggestions({
   meal,
   library,
@@ -409,9 +418,12 @@ function Suggestions({
   if (gaps.length === 0) return null;
   return (
     <section aria-labelledby="missing" className="flex flex-col gap-4">
-      <h2 id="missing" className="text-xl font-bold">
-        {he.meals.missingTitle}
-      </h2>
+      <div className="flex flex-col gap-1">
+        <h2 id="missing" className="text-xl font-bold">
+          {he.meals.missingTitle}
+        </h2>
+        <p className="text-sm text-muted">{he.meals.missingIntro}</p>
+      </div>
       {gaps.map((g) => (
         <div key={g.role} className="flex flex-col gap-1">
           <h3 className="font-bold">
@@ -445,7 +457,7 @@ function Suggestions({
 function ShareMeal({ meal }: { meal: Meal }) {
   const [copied, setCopied] = useState<"link" | "text" | null>(null);
   const link = new URL(withBase(`/meals?id=${meal.id}`), window.location.origin).toString();
-  const label = meal.status === "draft" ? he.meals.trayTitle : mealLabel(meal.title, meal.date);
+  const label = mealLabel(meal.title, meal.date) || he.meals.trayTitle;
   const text = [
     label,
     ...meal.items.map(

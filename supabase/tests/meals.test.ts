@@ -129,3 +129,57 @@ describe("the tray", () => {
     expect(meals!.map((m) => m.status)).toEqual(["done", "draft"]);
   });
 });
+
+describe("the active meal", () => {
+  it("is dated the coming Friday when a dish starts it", async () => {
+    const { data: meals } = await owner.client
+      .from("meals")
+      .select("date")
+      .eq("book_id", owner.bookId)
+      .eq("status", "draft")
+      .single();
+    expect(new Date(`${meals!.date}T12:00:00`).getDay()).toBe(5);
+  });
+
+  it("is replaced by opening a new one; the old one joins the list, or goes if empty", async () => {
+    const { data: before } = await owner.client
+      .from("meals")
+      .select("id")
+      .eq("book_id", owner.bookId)
+      .eq("status", "draft")
+      .single();
+    const { data: first, error } = await owner.client.rpc("open_meal", {
+      p_book: owner.bookId,
+      p_title: "שישי אצל סבתא",
+      p_date: "2026-12-04",
+    });
+    expect(error).toBeNull();
+    // The previous active meal had a dish: it's kept, no longer active.
+    expect(
+      (await owner.client.from("meals").select("status").eq("id", before!.id).single()).data,
+    ).toEqual({ status: "done" });
+
+    // An empty active meal just goes.
+    const { data: second } = await owner.client.rpc("open_meal", {
+      p_book: owner.bookId,
+      p_title: "ארוחת שבת",
+      p_date: "2026-12-05",
+    });
+    expect((await owner.client.from("meals").select("id").eq("id", first!)).data).toEqual([]);
+    expect(
+      (await owner.client.from("meals").select("title, date, status").eq("id", second!).single())
+        .data,
+    ).toEqual({ title: "ארוחת שבת", date: "2026-12-05", status: "draft" });
+
+    // Viewers can't.
+    expect(
+      (
+        await viewer.client.rpc("open_meal", {
+          p_book: owner.bookId,
+          p_title: "לא",
+          p_date: "2026-12-06",
+        })
+      ).error?.message,
+    ).toContain("not_allowed");
+  });
+});

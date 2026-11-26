@@ -2,12 +2,12 @@ import type { DishRole, RecipeCard } from "@/lib/recipes/types";
 
 /**
  * What a family meal usually has (PRD §13.1, a first step toward the menu
- * builder): the meal screen shows the courses still missing, with a few
+ * builder): a first course or soup, two mains, two salads and a dessert. the meal screen shows the courses still missing, with a few
  * dishes of that kind from the book to add.
  */
 export const COURSES: { role: DishRole; target: number }[] = [
-  { role: "main", target: 1 },
-  { role: "side", target: 1 },
+  { role: "soup", target: 1 },
+  { role: "main", target: 2 },
   { role: "salad", target: 2 },
   { role: "dessert", target: 1 },
 ];

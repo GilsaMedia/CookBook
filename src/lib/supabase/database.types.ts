@@ -910,6 +910,10 @@ export type Database = {
         Returns: number;
       };
       add_to_tray: { Args: { p_recipe: string }; Returns: string };
+      open_meal: {
+        Args: { p_book: string; p_date: string; p_title: string };
+        Returns: string;
+      };
       book_people: {
         Args: { p_book: string };
         Returns: { name: string; user_id: string }[];

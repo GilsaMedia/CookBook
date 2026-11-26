@@ -40,7 +40,7 @@ export function MealPage({ id, print = false }: { id: string; print?: boolean })
         {he.meals.toMeal}
       </Link>
       <h1 className="text-3xl leading-tight font-bold">
-        {meal.status === "draft" ? he.meals.trayTitle : mealLabel(meal.title, meal.date)}
+        {mealLabel(meal.title, meal.date) || he.meals.trayTitle}
       </h1>
       {meal.items.map((item, n) => {
         const recipe = recipes[n];

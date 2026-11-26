@@ -45,18 +45,34 @@ export async function addToTray(recipeId: string): Promise<string> {
   return data;
 }
 
-/** The book's tray, if it has one: its id and how many dishes. */
-export async function getTray(bookId: string): Promise<{ id: string; count: number } | null> {
+/**
+ * "פתיחת ארוחה": a new active meal with a name and a date; the one that was
+ * active joins the list. Resolves with its id.
+ */
+export async function openMeal(bookId: string, title: string, date: string): Promise<string> {
+  const { data, error } = await supabase().rpc("open_meal", {
+    p_book: bookId,
+    p_title: title,
+    p_date: date,
+  });
+  if (error) throw new MealError(error.message);
+  return data;
+}
+
+export type Tray = { id: string; count: number; title: string; date: string | null };
+
+/** The book's active meal (its tray), if it has one. */
+export async function getTray(bookId: string): Promise<Tray | null> {
   const { data, error } = await supabase()
     .from("meals")
-    .select("id, meal_items(count)")
+    .select("id, title, date, meal_items(count)")
     .eq("book_id", bookId)
     .eq("status", "draft")
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const count = (data.meal_items as unknown as { count: number }[])[0]?.count ?? 0;
-  return { id: data.id, count };
+  return { id: data.id, count, title: data.title, date: data.date };
 }
 
 /** The tray first, then saved meals, latest date first. */

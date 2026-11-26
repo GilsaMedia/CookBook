@@ -24,12 +24,14 @@ describe("courseGaps", () => {
       },
       library,
     );
-    // Main is there; no sides in the book; one of two salads; no dessert yet.
+    // No soup yet; one of two mains, but no other main in the book; one of
+    // two salads; no dessert yet.
     expect(gaps.map((g) => [g.role, g.have, g.target])).toEqual([
+      ["soup", 0, 1],
       ["salad", 1, 2],
       ["dessert", 0, 1],
     ]);
-    expect(gaps[0].suggestions.map((r) => r.id).sort()).toEqual(["salad-2", "salad-3"]);
+    expect(gaps[1].suggestions.map((r) => r.id).sort()).toEqual(["salad-2", "salad-3"]);
   });
 
   it("suggests the same dishes each time for the same meal", () => {

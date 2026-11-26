@@ -62,7 +62,12 @@ function FamilyMeals({ bookId }: { bookId: string }) {
             >
               <span className="font-semibold">
                 <span aria-hidden="true">🍽️ </span>
-                {m.status === "draft" ? he.meals.trayTitle : mealLabel(m.title, m.date)}
+                {mealLabel(m.title, m.date) || he.meals.trayTitle}
+                {m.status === "draft" && (
+                  <span className="ms-2 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                    {he.meals.activeBadge}
+                  </span>
+                )}
               </span>
               <span className="text-sm text-muted">
                 {he.library.mealMeta(
