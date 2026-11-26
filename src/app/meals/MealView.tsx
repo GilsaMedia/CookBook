@@ -269,6 +269,7 @@ export function MealView({ id }: { id: string }) {
         <Suggestions
           meal={m}
           library={library}
+          onRemove={remove}
           onAdd={(recipe) =>
             act(async () =>
               isTray
@@ -410,10 +411,12 @@ function Suggestions({
   meal,
   library,
   onAdd,
+  onRemove,
 }: {
   meal: Meal;
   library: RecipeCard[];
   onAdd: (recipe: RecipeCard) => Promise<void>;
+  onRemove: (item: MealItem) => void;
 }) {
   const courses = courseStatus(meal, library);
   const other = otherDishes(meal.items);
@@ -421,14 +424,22 @@ function Suggestions({
     dishes.length > 0 && (
       <ul className="flex flex-col gap-1 pb-1">
         {dishes.map((d) => (
-          <li key={d.id} className="flex items-baseline gap-2">
+          <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span aria-hidden="true" className="text-accent">
               ✓
             </span>
-            <Link href={`/recipe?id=${d.recipeId}`} className="font-medium">
+            <Link href={`/recipe?id=${d.recipeId}`} className="me-auto font-medium">
               {d.title}
             </Link>
             <span className="text-sm text-muted">{he.meals.inMeal}</span>
+            <button
+              type="button"
+              aria-label={`${he.meals.remove}: ${d.title}`}
+              onClick={() => onRemove(d)}
+              className={pill}
+            >
+              {he.meals.remove}
+            </button>
           </li>
         ))}
       </ul>

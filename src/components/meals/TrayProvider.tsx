@@ -11,8 +11,10 @@ type Tray = {
   /** The book's tray (its active meal), once it has one. */
   id: string | null;
   count: number;
-  /** "ארוחת שישי · 27.11" */
+  /** "יום שישי 27/11/2026" */
   label: string;
+  /** Whether a recipe is already in the active meal. */
+  has: (recipeId: string) => boolean;
   /** Owners and contributors plan meals; viewers only look. */
   canPlan: boolean;
   add: (recipeId: string) => Promise<void>;
@@ -23,6 +25,7 @@ const TrayContext = createContext<Tray>({
   id: null,
   count: 0,
   label: "",
+  has: () => false,
   canPlan: false,
   add: async () => {},
   refresh: () => {},
@@ -37,11 +40,12 @@ export function TrayProvider({ children }: { children: ReactNode }) {
   const access = useAccess();
   const approved = access?.status === "approved";
   const [book, setBook] = useState<{ id: string; canPlan: boolean } | null>(null);
-  const [tray, setTray] = useState<{ id: string | null; count: number; label: string }>({
-    id: null,
-    count: 0,
-    label: "",
-  });
+  const [tray, setTray] = useState<{
+    id: string | null;
+    count: number;
+    label: string;
+    recipeIds: Set<string>;
+  }>({ id: null, count: 0, label: "", recipeIds: new Set() });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -64,8 +68,13 @@ export function TrayProvider({ children }: { children: ReactNode }) {
         live &&
         setTray(
           t
-            ? { id: t.id, count: t.count, label: mealLabel(t.title, t.date) }
-            : { id: null, count: 0, label: "" },
+            ? {
+                id: t.id,
+                count: t.count,
+                label: mealLabel(t.title, t.date),
+                recipeIds: new Set(t.recipeIds),
+              }
+            : { id: null, count: 0, label: "", recipeIds: new Set() },
         ),
       () => {},
     );
@@ -89,6 +98,7 @@ export function TrayProvider({ children }: { children: ReactNode }) {
         id: tray.id,
         count: tray.count,
         label: tray.label,
+        has: (recipeId: string) => tray.recipeIds.has(recipeId),
         canPlan: !!book?.canPlan,
         add,
         refresh,

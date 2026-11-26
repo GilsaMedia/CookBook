@@ -183,3 +183,25 @@ describe("the active meal", () => {
     ).toContain("not_allowed");
   });
 });
+
+describe("a dish in a meal", () => {
+  it("goes in once", async () => {
+    const { data: meal } = await owner.client.rpc("open_meal", {
+      p_book: owner.bookId,
+      p_title: "פעם אחת",
+      p_date: "2026-12-11",
+    });
+    const row = { meal_id: meal!, book_id: owner.bookId, recipe_id: soup, position: 0 };
+    expect((await owner.client.from("meal_items").insert(row)).error).toBeNull();
+    expect(
+      (await owner.client.from("meal_items").insert({ ...row, position: 1 })).error,
+    ).not.toBeNull();
+    // add_to_tray just leaves it there.
+    expect((await owner.client.rpc("add_to_tray", { p_recipe: soup })).error).toBeNull();
+    const { count } = await owner.client
+      .from("meal_items")
+      .select("id", { count: "exact", head: true })
+      .eq("meal_id", meal!);
+    expect(count).toBe(1);
+  });
+});

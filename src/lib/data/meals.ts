@@ -59,20 +59,27 @@ export async function openMeal(bookId: string, title: string, date: string): Pro
   return data;
 }
 
-export type Tray = { id: string; count: number; title: string; date: string | null };
+export type Tray = {
+  id: string;
+  count: number;
+  title: string;
+  date: string | null;
+  /** The recipes already in it: a dish goes into a meal once. */
+  recipeIds: string[];
+};
 
 /** The book's active meal (its tray), if it has one. */
 export async function getTray(bookId: string): Promise<Tray | null> {
   const { data, error } = await supabase()
     .from("meals")
-    .select("id, title, date, meal_items(count)")
+    .select("id, title, date, meal_items(recipe_id)")
     .eq("book_id", bookId)
     .eq("status", "draft")
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  const count = (data.meal_items as unknown as { count: number }[])[0]?.count ?? 0;
-  return { id: data.id, count, title: data.title, date: data.date };
+  const recipeIds = (data.meal_items ?? []).map((i) => i.recipe_id);
+  return { id: data.id, count: recipeIds.length, title: data.title, date: data.date, recipeIds };
 }
 
 /** The tray first, then saved meals, latest date first. */
@@ -179,8 +186,9 @@ export async function recipeServings(recipeId: string): Promise<number | null> {
   return data?.servings ?? null;
 }
 
-/** Adds a dish at the end of a meal. */
+/** Adds a dish at the end of a meal; a dish already in it isn't added twice. */
 export async function addItem(meal: Meal, recipeId: string, servings: number | null) {
+  if (meal.items.some((i) => i.recipeId === recipeId)) return;
   const position = Math.max(-1, ...meal.items.map((i) => i.position)) + 1;
   const { error } = await supabase()
     .from("meal_items")

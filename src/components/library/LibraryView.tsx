@@ -15,6 +15,8 @@ export type PickMode = {
   label: string;
   onPick: (recipe: RecipeCard) => void;
   onCancel: () => void;
+  /** Recipes already in the meal: shown, but not pickable. */
+  taken: Set<string>;
 };
 
 /** Results follow the keyboard within this many ms (PRD §5.1 asks for ≤150). */
@@ -43,7 +45,6 @@ export function LibraryView({
   home?: ReactNode;
 }) {
   const tray = useTray();
-  const [added, setAdded] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
@@ -197,9 +198,15 @@ export function LibraryView({
               {pick ? (
                 <button
                   type="button"
+                  disabled={pick.taken.has(r.id)}
                   onClick={() => pick.onPick(r)}
-                  className="press flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white text-start shadow-sm ring-1 ring-rule"
+                  className="press relative flex h-full w-full flex-col overflow-hidden rounded-2xl bg-white text-start shadow-sm ring-1 ring-rule disabled:opacity-50"
                 >
+                  {pick.taken.has(r.id) && (
+                    <span className="absolute start-2 top-2 z-10 rounded-full bg-ink px-2 py-1 text-xs font-semibold text-paper">
+                      {he.meals.alreadyInBadge}
+                    </span>
+                  )}
                   <RecipeImage id={r.id} url={r.imageUrl} className="aspect-[4/3] w-full" />
                   <div className="flex flex-1 flex-col gap-1 p-3">
                     <h2 className="line-clamp-2 text-base leading-snug font-semibold">{r.title}</h2>
@@ -239,18 +246,14 @@ export function LibraryView({
               {!pick && tray.canPlan && (
                 <button
                   type="button"
-                  aria-label={he.meals.addCard(r.title)}
-                  onClick={async () => {
-                    try {
-                      await tray.add(r.id);
-                      setAdded(r.id);
-                    } catch {
-                      setAdded(null);
-                    }
-                  }}
-                  className="press absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-white/90 text-xl font-bold text-accent shadow-sm ring-1 ring-rule"
+                  disabled={tray.has(r.id)}
+                  aria-label={
+                    tray.has(r.id) ? he.meals.alreadyInCard(r.title) : he.meals.addCard(r.title)
+                  }
+                  onClick={() => tray.add(r.id).catch(() => {})}
+                  className="press absolute end-2 top-2 flex size-11 items-center justify-center rounded-full bg-white/90 text-xl font-bold text-accent shadow-sm ring-1 ring-rule disabled:bg-accent disabled:text-white"
                 >
-                  {added === r.id ? "✓" : "+"}
+                  {tray.has(r.id) ? "✓" : "+"}
                 </button>
               )}
             </li>

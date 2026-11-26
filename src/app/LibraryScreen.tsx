@@ -189,6 +189,8 @@ function usePickMode(): PickMode | undefined {
         ? he.meals.pickSwap(item.title)
         : he.meals.pickAdd(mealLabel(meal.title, meal.date) || he.meals.trayTitle),
       onCancel: back,
+      // A dish goes into a meal once (the one being swapped out can stay).
+      taken: new Set(meal.items.filter((i) => i.id !== itemId).map((i) => i.recipeId)),
       onPick: async (recipe) => {
         const servings = await recipeServings(recipe.id);
         if (item) await swapItem(item.id, recipe.id, servings);

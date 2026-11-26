@@ -10,11 +10,15 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
 
   // Six dishes onto the tray, from the library cards.
   const add = page.getByRole("button", { name: /^הוספה לארוחה: / });
+  const inMeal = page.getByRole("button", { name: /^כבר בארוחה: / });
   await expect(add).toHaveCount(8);
   for (let i = 0; i < 6; i++) {
-    await add.nth(i).click();
-    await expect(add.nth(i)).toHaveText("✓");
+    await add.first().click();
+    await expect(inMeal).toHaveCount(i + 1);
   }
+  // A dish goes into a meal once: added ones can't be added again.
+  await expect(inMeal.first()).toBeDisabled();
+  await expect(add).toHaveCount(2);
   // The first dish opened the active meal, for the coming Friday.
   const pill = page.getByRole("link", { name: /^מגש: יום שישי \d{1,2}\/\d{1,2}\/\d{4} · 6$/ });
   await expect(pill).toBeVisible();
@@ -27,7 +31,8 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     /^מגש הארוחה: יום שישי \d{1,2}\/\d{1,2}\/\d{4}$/,
   );
-  const dishes = page.getByRole("list", { name: "המנות בארוחה" }).getByRole("listitem");
+  const dishesList = page.getByRole("list", { name: "המנות בארוחה" });
+  const dishes = dishesList.getByRole("listitem");
   await expect(dishes).toHaveCount(6);
 
   // Swap: the library opens to pick another dish for the same place.
@@ -35,6 +40,7 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await page.getByRole("button", { name: "מצרכים: מרק בטטה" }).click();
   await page.getByRole("link", { name: "החלפה: מרק בטטה" }).click();
   await expect(page.getByText("בחירת מנה · במקום ״מרק בטטה״")).toBeVisible();
+  await expect(page.getByRole("button", { name: /מרק עדשים כתומות/ })).toBeDisabled();
   await page.getByRole("button", { name: /שקשוקה/ }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^מגש הארוחה: יום שישי/);
   await expect(dishes).toHaveCount(6);
@@ -42,7 +48,7 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(page.getByRole("main")).not.toContainText("מרק בטטה");
 
   // Remove, then undo within the 5 seconds.
-  await page.getByRole("button", { name: "הסרה: שקשוקה" }).click();
+  await dishesList.getByRole("button", { name: "הסרה: שקשוקה" }).click();
   await expect(dishes).toHaveCount(5);
   await expect(page.getByRole("status")).toContainText("״שקשוקה״ הוסרה");
   await page.getByRole("button", { name: "בטל" }).click();
