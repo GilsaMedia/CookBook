@@ -447,6 +447,87 @@ export type Database = {
           },
         ];
       };
+      meal_items: {
+        Row: {
+          book_id: string;
+          created_at: string;
+          id: string;
+          meal_id: string;
+          position: number;
+          recipe_id: string;
+          servings: number | null;
+          version_id: string | null;
+        };
+        Insert: {
+          book_id: string;
+          created_at?: string;
+          id?: string;
+          meal_id: string;
+          position?: number;
+          recipe_id: string;
+          servings?: number | null;
+          version_id?: string | null;
+        };
+        Update: {
+          book_id?: string;
+          created_at?: string;
+          id?: string;
+          meal_id?: string;
+          position?: number;
+          recipe_id?: string;
+          servings?: number | null;
+          version_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_items_meal_id_book_id_fkey";
+            columns: ["meal_id", "book_id"];
+            isOneToOne: false;
+            referencedRelation: "meals";
+            referencedColumns: ["id", "book_id"];
+          },
+          {
+            foreignKeyName: "meal_items_recipe_id_book_id_fkey";
+            columns: ["recipe_id", "book_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "book_id"];
+          },
+        ];
+      };
+      meals: {
+        Row: {
+          book_id: string;
+          created_at: string;
+          created_by: string | null;
+          date: string | null;
+          id: string;
+          status: Database["public"]["Enums"]["meal_status"];
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          book_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          date?: string | null;
+          id?: string;
+          status?: Database["public"]["Enums"]["meal_status"];
+          title?: string;
+          updated_at?: string;
+        };
+        Update: {
+          book_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          date?: string | null;
+          id?: string;
+          status?: Database["public"]["Enums"]["meal_status"];
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       preferences: {
         Row: {
           book_id: string;
@@ -825,6 +906,7 @@ export type Database = {
         Args: { p_book?: string; p_recipe_ids?: string[]; p_share: string };
         Returns: number;
       };
+      add_to_tray: { Args: { p_recipe: string }; Returns: string };
       access_requests: {
         Args: never;
         Returns: {
@@ -939,6 +1021,7 @@ export type Database = {
         | "drinks"
         | "other";
       ingredient_unit: "g" | "ml" | "unit";
+      meal_status: "draft" | "done" | "closed";
       member_role: "owner" | "contributor" | "viewer";
       preference_scope: "global" | "category" | "recipe";
       recipe_status: "draft" | "pending" | "approved" | "rejected";
@@ -1085,6 +1168,7 @@ export const Constants = {
         "other",
       ],
       ingredient_unit: ["g", "ml", "unit"],
+      meal_status: ["draft", "done", "closed"],
       member_role: ["owner", "contributor", "viewer"],
       preference_scope: ["global", "category", "recipe"],
       recipe_status: ["draft", "pending", "approved", "rejected"],

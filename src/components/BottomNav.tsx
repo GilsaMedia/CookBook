@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAccess } from "@/components/auth/AuthProvider";
+import { SoonBadge } from "@/components/SoonBadge";
 import { he } from "@/i18n/he";
 
-type Tab = { href: string; label: string; icon: ReactNode };
+/** `soon`: shown, but not built yet ("בקרוב"). */
+type Tab = { href: string; label: string; icon: ReactNode; soon?: boolean };
 
 const iconProps = {
   width: 24,
@@ -44,6 +46,7 @@ const tabs: Tab[] = [
   {
     href: "/shopping",
     label: he.nav.shopping,
+    soon: true,
     icon: (
       <svg {...iconProps}>
         <path d="M5 8h14l-1.5 12h-11z" />
@@ -95,7 +98,12 @@ export function BottomNav() {
                   active ? "text-accent" : "text-muted"
                 }`}
               >
-                {tab.icon}
+                <span className="relative">
+                  {tab.icon}
+                  {tab.soon && (
+                    <SoonBadge className="absolute -end-5 -top-1.5 px-1.5 py-0.5 text-[0.5rem]" />
+                  )}
+                </span>
                 <span>{tab.label}</span>
               </Link>
             </li>

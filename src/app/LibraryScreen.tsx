@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useAccess } from "@/components/auth/AuthProvider";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { BookSwitcher } from "@/components/library/BookSwitcher";
-import { LibraryView } from "@/components/library/LibraryView";
+import { LibraryView, type PickMode } from "@/components/library/LibraryView";
+import { useTray } from "@/components/meals/TrayProvider";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
 import { getAccessRequests } from "@/lib/data/access";
+import { addItem, addToTray, getMeal, recipeServings, swapItem, type Meal } from "@/lib/data/meals";
+import { mealLabel } from "@/lib/meals/format";
 import { incomingShares, syncSharedBooks, type IncomingShare } from "@/lib/data/sharing";
 import { isDemo } from "@/lib/demo";
 import type { Library } from "@/lib/recipes/types";
@@ -18,6 +22,7 @@ type State = { status: "loading" } | { status: "error" } | { status: "ready"; li
 /** Library (screen 1): loads the signed-in user's book. */
 export function LibraryScreen() {
   const [state, setState] = useState<State>({ status: "loading" });
+  const pick = usePickMode();
   const [incoming, setIncoming] = useState<IncomingShare[]>([]);
   const isAdmin = !!useAccess()?.isAdmin;
   const [waiting, setWaiting] = useState(0);
@@ -138,7 +143,45 @@ export function LibraryScreen() {
           {he.common.loadFailed}
         </p>
       )}
-      {library && <LibraryView library={library} />}
+      {library && <LibraryView library={library} pick={pick} />}
     </div>
   );
+}
+
+/**
+ * Choosing a dish for a meal (PRD §8.2): ?pick=<dish>&meal=<meal> swaps that
+ * dish, ?add=<meal> adds one; then back to the meal.
+ */
+function usePickMode(): PickMode | undefined {
+  const params = useSearchParams();
+  const router = useRouter();
+  const tray = useTray();
+  const mealId = params.get("meal") ?? params.get("add");
+  const itemId = params.get("pick");
+  const [meal, setMeal] = useState<Meal | null>(null);
+
+  useEffect(() => {
+    if (!mealId) return;
+    getMeal(mealId).then(setMeal, () => {});
+  }, [mealId]);
+
+  return useMemo(() => {
+    if (!mealId || !meal) return undefined;
+    const back = () => router.push(`/meals?id=${meal.id}`);
+    const item = itemId ? meal.items.find((i) => i.id === itemId) : undefined;
+    return {
+      label: item
+        ? he.meals.pickSwap(item.title)
+        : he.meals.pickAdd(mealLabel(meal.title, meal.date) || he.meals.trayTitle),
+      onCancel: back,
+      onPick: async (recipe) => {
+        const servings = await recipeServings(recipe.id);
+        if (item) await swapItem(item.id, recipe.id, servings);
+        else if (meal.status === "draft") await addToTray(recipe.id);
+        else await addItem(meal, recipe.id, servings);
+        tray.refresh();
+        back();
+      },
+    };
+  }, [mealId, meal, itemId, router, tray]);
 }

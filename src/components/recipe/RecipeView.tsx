@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { AddToMealButton } from "@/components/meals/AddToMealButton";
 import { RecipeImage } from "@/components/recipe/RecipeImage";
+import { SoonBadge } from "@/components/SoonBadge";
 import { WarningChip } from "@/components/recipe/WarningChip";
 import { he } from "@/i18n/he";
 import { isDemo } from "@/lib/demo";
@@ -107,19 +109,17 @@ export function RecipeView({ recipe }: { recipe: RecipeDetail }) {
         </Link>
       )}
 
-      {/* Wired in later prompts: meal tray (6) and cook mode (8). */}
+      {/* Cook mode comes in prompt 8; until then it says "בקרוב". */}
       <div className="flex gap-3">
+        <AddToMealButton recipeId={recipe.id} />
         <button
           type="button"
-          className="press h-12 flex-1 rounded-full bg-accent px-5 text-base font-semibold text-white"
-        >
-          {he.recipe.addToMeal}
-        </button>
-        <button
-          type="button"
-          className="press h-12 flex-1 rounded-full bg-white px-5 text-base font-semibold ring-1 ring-rule"
+          disabled
+          aria-label={he.recipe.cookModeSoon}
+          className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-white px-5 text-base font-semibold text-muted ring-1 ring-rule"
         >
           {he.recipe.cookMode}
+          <SoonBadge />
         </button>
       </div>
 
