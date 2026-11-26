@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { useTray } from "@/components/meals/TrayProvider";
 import { he } from "@/i18n/he";
 import { getCurrentBook } from "@/lib/data/book";
-import { bookPeople, listMeals, openMeal, type MealSummary } from "@/lib/data/meals";
+import { bookPeople, deleteMeal, listMeals, openMeal, type MealSummary } from "@/lib/data/meals";
 import { isDemo } from "@/lib/demo";
 import { defaultTitle, fullDate, mealLabel, nextFriday, toIsoDate } from "@/lib/meals/format";
 import { MealPage } from "./MealPage";
@@ -59,10 +60,10 @@ function MealList() {
       .sort((a, b) => (a.date! < b.date! ? -1 : 1));
     const past = saved.filter((m) => !(m.date && m.date >= today));
     const row = (m: MealSummary) => (
-      <li key={m.id}>
+      <li key={m.id} className="flex items-center gap-2">
         <Link
           href={`/meals?id=${m.id}`}
-          className="press flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-3"
+          className="press flex min-w-0 flex-1 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 py-3"
         >
           <span className="font-semibold">{mealLabel(m.title, m.date) || he.meals.trayTitle}</span>
           <span className="text-sm text-muted">
@@ -73,6 +74,23 @@ function MealList() {
             )}
           </span>
         </Link>
+        {tray.canPlan && (
+          <ConfirmButton
+            label={he.meals.deleteShort}
+            confirm={he.meals.deleteAsk}
+            ariaLabel={he.meals.deleteMeal(mealLabel(m.title, m.date) || he.meals.trayTitle)}
+            onConfirm={async () => {
+              try {
+                await deleteMeal(m.id);
+                setData({ ...data, meals: data.meals.filter((x) => x.id !== m.id) });
+                tray.refresh();
+              } catch {
+                setFailed(true);
+              }
+            }}
+            className="press h-11 shrink-0 rounded-full px-3 text-sm font-semibold text-red-700"
+          />
+        )}
       </li>
     );
     const section = (title: string, hint: string | null, list: MealSummary[]) =>

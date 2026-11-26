@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTray } from "@/components/meals/TrayProvider";
+import { ConfirmButton } from "@/components/ConfirmButton";
 import { SoonBadge } from "@/components/SoonBadge";
 import { he } from "@/i18n/he";
 import { getLibrary } from "@/lib/data";
@@ -300,21 +301,21 @@ export function MealView({ id }: { id: string }) {
         </Link>
       </div>
       <ShareMeal meal={m} />
-      {!isTray && canPlan && (
-        <button
-          type="button"
-          onClick={async () => {
+      {canPlan && (
+        <ConfirmButton
+          label={he.meals.delete}
+          confirm={he.meals.deleteAsk}
+          onConfirm={async () => {
             try {
               await deleteMeal(m.id);
+              tray.refresh();
               router.push("/meals");
             } catch {
               setError(he.meals.failed);
             }
           }}
-          className={`${small} self-start text-red-700`}
-        >
-          {he.meals.delete}
-        </button>
+          className={`${small} self-start px-4 text-red-700`}
+        />
       )}
 
       {error && (

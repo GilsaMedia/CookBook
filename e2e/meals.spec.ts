@@ -75,9 +75,14 @@ test("six dishes → a Friday meal → swap one → undo a removal", async ({ pa
   await expect(page.getByRole("heading", { name: "ארוחות קרובות" })).toBeVisible();
   await expect(page.getByRole("link", { name: /^ארוחת שישי · .*6 מנות/ })).toBeVisible();
 
+  // Any meal can be deleted, with one "are you sure?" tap.
+  await page.getByRole("button", { name: /^מחיקת ארוחת שישי · / }).click();
+  await page.getByRole("button", { name: "למחוק? כן" }).click();
+  await expect(page.getByRole("link", { name: /^ארוחת שישי · .*6 מנות/ })).toHaveCount(0);
+
   // The library's home shows the family's meals and the newest recipes.
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "הארוחות של המשפחה" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /ארוחת שישי · \d/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /שישי אצל סבתא · \d/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "נוספו לאחרונה ✨" })).toBeVisible();
 });
