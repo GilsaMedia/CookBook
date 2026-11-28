@@ -226,6 +226,57 @@ export type Database = {
           },
         ];
       };
+      cook_sessions: {
+        Row: {
+          book_id: string;
+          checked_ingredient_ids: string[];
+          created_at: string;
+          current_step: number;
+          id: string;
+          last_active_at: string;
+          recipe_id: string;
+          rev: number;
+          user_id: string;
+        };
+        Insert: {
+          book_id: string;
+          checked_ingredient_ids?: string[];
+          created_at?: string;
+          current_step?: number;
+          id?: string;
+          last_active_at?: string;
+          recipe_id: string;
+          rev?: number;
+          user_id?: string;
+        };
+        Update: {
+          book_id?: string;
+          checked_ingredient_ids?: string[];
+          created_at?: string;
+          current_step?: number;
+          id?: string;
+          last_active_at?: string;
+          recipe_id?: string;
+          rev?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cook_sessions_recipe_id_book_id_fkey";
+            columns: ["recipe_id", "book_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id", "book_id"];
+          },
+          {
+            foreignKeyName: "cook_sessions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       import_items: {
         Row: {
           attempts: number;
@@ -1041,6 +1092,26 @@ export type Database = {
         };
       };
       claim_share: { Args: { p_token: string }; Returns: string };
+      cook_check: {
+        Args: { p_checked: boolean; p_ingredient: string; p_session: string };
+        Returns: {
+          book_id: string;
+          checked_ingredient_ids: string[];
+          created_at: string;
+          current_step: number;
+          id: string;
+          last_active_at: string;
+          recipe_id: string;
+          rev: number;
+          user_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "cook_sessions";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       create_book: { Args: { p_name: string }; Returns: string };
       decide_access: {
         Args: { p_approve: boolean; p_user: string };
