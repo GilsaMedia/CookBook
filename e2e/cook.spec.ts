@@ -35,15 +35,17 @@ test("cook mode follows the cook from the phone to a second screen, and back", a
   await expect(tablet.locator("[data-live]")).toHaveAttribute("data-live", "true");
 
   // A check on the phone shows on the other screen within a second.
-  const first = phone.getByRole("checkbox").first();
-  const name = (await first.textContent())!.replace(/רשות$/, "").trim();
-  await first.click();
-  await expect(first).toHaveAttribute("aria-checked", "true");
-  await expect(tablet.getByRole("checkbox", { name: new RegExp(`^${name}`) })).toHaveAttribute(
-    "aria-checked",
-    "true",
-    { timeout: 1_000 },
-  );
+  const name = (await phone.getByRole("checkbox").first().textContent())!
+    .replace(/רשות$/, "")
+    .trim();
+  // Found by name: once checked, it sinks below the others.
+  const row = (page: Page) =>
+    page.getByRole("checkbox", {
+      name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+    });
+  await row(phone).click();
+  await expect(row(phone)).toHaveAttribute("aria-checked", "true");
+  await expect(row(tablet)).toHaveAttribute("aria-checked", "true", { timeout: 1_000 });
   await expect(tablet.getByRole("button", { name: /^מצרכים 1\/\d+$/ })).toBeVisible();
 
   // The step moves on the other screen; the phone follows.
