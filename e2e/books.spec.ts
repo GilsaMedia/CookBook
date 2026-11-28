@@ -21,6 +21,7 @@ async function shareWholeBook(
     "true",
   );
   if (join) await page.getByLabel(/לצרף אותם לספר עצמו/).check();
+  await page.getByRole("button", { name: "לפי כתובת מייל" }).click();
   await page.getByLabel("כתובת המייל שלהם").fill(to);
   await page.getByLabel("השם שלך").fill("גיל");
   await page.getByRole("button", { name: "שיתוף עם אדם אחד" }).click();

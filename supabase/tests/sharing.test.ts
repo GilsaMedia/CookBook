@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { admin, cleanupUsers, createUser, type TestUser } from "./helpers";
 
@@ -231,5 +232,86 @@ describe("sharing", () => {
     expect(
       (await stranger.client.rpc("accept_share", { p_share: data!.id })).error?.message,
     ).toContain("already_answered");
+  });
+});
+
+describe("sharing by link", () => {
+  const token = "test-link-token-0123456789abcdef";
+  const tokenHash = () => createHash("sha256").update(token).digest("hex");
+  let linkShare: string;
+
+  it("is a share for nobody yet, seen only by its sender", async () => {
+    const { data, error } = await gil.client
+      .from("shares")
+      .insert({
+        from_book_id: gil.bookId,
+        from_user: gil.id,
+        sender_name: "גיל",
+        to_email: null,
+        token_hash: tokenHash(),
+        recipe_ids: [soup],
+      })
+      .select("id")
+      .single();
+    expect(error).toBeNull();
+    linkShare = data!.id;
+    expect((await stranger.client.from("shares").select("id").eq("id", linkShare)).data).toEqual(
+      [],
+    );
+    // A share needs someone: an email or a link.
+    const nobody = await gil.client.from("shares").insert({
+      from_book_id: gil.bookId,
+      from_user: gil.id,
+      sender_name: "גיל",
+      to_email: null,
+      recipe_ids: [soup],
+    });
+    expect(nobody.error).not.toBeNull();
+  });
+
+  it("goes to the first one who opens it, and only them", async () => {
+    expect((await gil.client.rpc("claim_share", { p_token: token })).error?.message).toContain(
+      "share_self",
+    );
+    expect((await dana.client.rpc("claim_share", { p_token: "wrong" })).error?.message).toContain(
+      "not_found",
+    );
+    const { data: claimed, error } = await dana.client.rpc("claim_share", { p_token: token });
+    expect(error).toBeNull();
+    expect(claimed).toBe(linkShare);
+    // Opening it again is fine; anyone else is too late.
+    expect((await dana.client.rpc("claim_share", { p_token: token })).data).toBe(linkShare);
+    expect((await stranger.client.rpc("claim_share", { p_token: token })).error?.message).toContain(
+      "link_used",
+    );
+
+    const { data: preview } = await dana.client.rpc("share_preview", { p_share: linkShare });
+    expect(preview!.map((r) => r.title)).toEqual(["מרק עדשים"]);
+    const { data: sent } = await gil.client
+      .from("shares")
+      .select("to_email")
+      .eq("id", linkShare)
+      .single();
+    expect(sent!.to_email).toBe(dana.email.toLowerCase());
+  });
+
+  it("needs an approved account", async () => {
+    const waiting = await createUser("share-waiting", { approved: false });
+    const { data } = await gil.client
+      .from("shares")
+      .insert({
+        from_book_id: gil.bookId,
+        from_user: gil.id,
+        sender_name: "גיל",
+        to_email: null,
+        token_hash: createHash("sha256").update("another-token").digest("hex"),
+        recipe_ids: [soup],
+      })
+      .select("id")
+      .single();
+    expect(data).not.toBeNull();
+    expect(
+      (await waiting.client.rpc("claim_share", { p_token: "another-token" })).error?.message,
+    ).toContain("not_approved");
   });
 });
