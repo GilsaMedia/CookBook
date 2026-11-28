@@ -20,6 +20,7 @@ export function TrayPill() {
     count === 0 ||
     pathname === "/meals" ||
     pathname === "/login" ||
+    pathname === "/cook" ||
     pathname.startsWith("/auth/")
   )
     return null;

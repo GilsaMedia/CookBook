@@ -57,7 +57,6 @@ export const he = {
     opensInNewTab: "(נפתח בלשונית חדשה)",
     addToMeal: "הוספה לארוחה +",
     cookMode: "מצב בישול",
-    cookModeSoon: "מצב בישול · בקרוב",
     ingredients: "מצרכים",
     steps: "אופן ההכנה",
     optional: "רשות",
@@ -65,6 +64,32 @@ export const he = {
     notFound: "המתכון לא נמצא",
     notFoundHint: "ייתכן שהוא נמחק, או שאין לך גישה אליו.",
     share: "שיתוף המתכון",
+  },
+  cook: {
+    header: (n: number, total: number, title: string) => `שלב ${n} מתוך ${total} · ${title}`,
+    exit: "יציאה ממצב בישול",
+    prev: "הקודם",
+    next: "השלב הבא",
+    finish: "סיימתי",
+    noSteps: "למתכון הזה אין שלבים.",
+    ingredients: (done: number, total: number) => `מצרכים ${done}/${total}`,
+    noIngredients: "למתכון הזה אין מצרכים.",
+    allIn: "הכול נוסף ✓",
+    toLastStep: "לשלב האחרון",
+    resumeTitle: "כבר התחלת לבשל את זה",
+    resumeWhere: (step: number, total: number, checked: number) =>
+      [
+        total > 0 ? `שלב ${step} מתוך ${total}` : "",
+        checked === 1 ? "מצרך אחד סומן" : checked > 1 ? `${checked} מצרכים סומנו` : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    resume: "להמשיך",
+    restart: "להתחיל מחדש",
+    wakeNote:
+      "המסך עלול לכבות באמצע הבישול: המכשיר הזה לא מאפשר להשאיר אותו דולק. ב-iPhone זה עובד מ-iOS 18.4, באפליקציה שעל מסך הבית.",
+    dismiss: "הבנתי",
+    failed: "השינוי לא נשמר, אז חזרנו למה שנשמר. נסו שוב.",
   },
   share: {
     title: "שיתוף מתכונים",
