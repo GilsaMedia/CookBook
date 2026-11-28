@@ -94,8 +94,10 @@ export function watchSession(
   onLive: (live: boolean) => void,
 ): () => void {
   const db = supabase();
+  // `wait`: "listening" only once changes really flow (by default the channel
+  // says so earlier, and a change made in between would be missed).
   const channel = db
-    .channel(`cook:${id}`)
+    .channel(`cook:${id}`, { config: { postgres_changes_options: { wait: true } } })
     .on(
       "postgres_changes",
       { event: "UPDATE", schema: "public", table: "cook_sessions", filter: `id=eq.${id}` },
