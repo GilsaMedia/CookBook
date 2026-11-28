@@ -76,7 +76,8 @@ function isActive(pathname: string, href: string) {
 export function BottomNav() {
   const pathname = usePathname();
   const access = useAccess();
-  if (pathname === "/login" || pathname.startsWith("/auth/")) return null;
+  // Cook mode has the whole screen.
+  if (pathname === "/login" || pathname.startsWith("/auth/") || pathname === "/cook") return null;
   // A new account waiting for approval has nowhere to go yet.
   if (access && access.status !== "approved") return null;
 
